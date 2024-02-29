@@ -22,7 +22,7 @@ lazy_static! {
     pub static ref CONTRACT_MARKET: web3::ethabi::Contract = web3::ethabi::Contract::load(MARKET_ABI_JSON.as_bytes()).unwrap();
 }
 
-impl MarketPlace for InscribeContext {
+impl<'a> MarketPlace for InscribeContext<'a> {
     fn process_inscribe_invoke(&mut self, insc: &mut Inscription) -> bool {
         assert!(insc.event_logs.len() == 1);
 

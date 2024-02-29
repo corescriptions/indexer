@@ -12,7 +12,7 @@ pub trait ProcessBlockContextJson {
     fn save_inscribe_json(&self, txn: &Transaction<TransactionDB>, insc: &Inscription);
 }
 
-impl ProcessBlockContextJson for InscribeContext {
+impl<'a> ProcessBlockContextJson for InscribeContext<'a> {
     fn process_inscribe_json(&mut self, insc: &Inscription) -> bool {
         if let Some(protocol) = insc.json["p"].as_str() {
             if protocol == *TOKEN_PROTOCOL {

@@ -11,7 +11,7 @@ pub trait ProcessBlockContextJsonCollection {
     fn save_inscribe_collection(&self, txn: &rocksdb::Transaction<rocksdb::TransactionDB>, insc: &Inscription);
 }
 
-impl ProcessBlockContextJsonCollection for InscribeContext {
+impl<'a> ProcessBlockContextJsonCollection for InscribeContext<'a> {
     fn execute_app_collection(&self, insc: &Inscription) -> bool {
         let oper = insc.json["op"].as_str();
         if oper.is_none() {

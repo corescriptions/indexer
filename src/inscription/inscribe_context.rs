@@ -12,8 +12,8 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-impl InscribeContext {
-    pub fn new(db: Arc<RwLock<rocksdb::TransactionDB>>) -> Self {
+impl<'a> InscribeContext<'a> {
+    pub fn new(db: Arc<RwLock<rocksdb::TransactionDB>>, inscribe_filter: &'a InscribeFilter) -> Self {
         InscribeContext {
             db: db.clone(),
             inscriptions: Vec::new(),
@@ -21,6 +21,7 @@ impl InscribeContext {
             inscriptions_transfer: Vec::new(),
             token_cache: db.read().unwrap().get_tokens(),
             token_balance_change: HashMap::new(),
+            inscribe_filter,
         }
     }
 
@@ -82,7 +83,13 @@ impl InscribeContext {
         let mut inscriptions = std::mem::take(&mut self.inscriptions);
 
         for insc in &mut inscriptions {
-            self.process_inscribe(insc);
+            if self.inscribe_filter.tx_filter.contains(&insc.tx_hash)
+                || self.inscribe_filter.block_filter.contains(&insc.blocknumber)
+            {
+                insc.verified = InscriptionVerifiedStatus::Failed;
+            } else {
+                self.process_inscribe(insc);
+            }
         }
 
         self.inscriptions = inscriptions;

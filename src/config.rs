@@ -21,6 +21,10 @@ lazy_static! {
         .expect("START_BLOCK must be set")
         .parse::<u64>()
         .unwrap();
+    pub static ref INSCRIBE_FILTER_ENABLE: bool = std::env::var("INSCRIBE_FILTER_ENABLE")
+        .expect("INSCRIBE_FILTER_ENABLE must be set")
+        .parse::<bool>()
+        .unwrap();
     pub static ref REINDEX: bool = std::env::var("REINDEX")
         .unwrap_or("false".to_string())
         .parse::<bool>()

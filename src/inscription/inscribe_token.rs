@@ -29,7 +29,7 @@ pub trait ProcessBlockContextJsonToken {
     fn execute_app_token_market_list(&mut self, insc: &Inscription) -> bool;
 }
 
-impl ProcessBlockContextJsonToken for InscribeContext {
+impl<'a> ProcessBlockContextJsonToken for InscribeContext<'a> {
     fn execute_app_token(&mut self, insc: &Inscription) -> bool {
         let op_value = &insc.json["op"];
         if !op_value.is_string() {
@@ -144,6 +144,10 @@ impl ProcessBlockContextJsonToken for InscribeContext {
         if mint_amt > token.mint_limit {
             debug!("[indexer] token mint: mint limit: {} {}", insc.tx_hash, tick);
             return false;
+        }
+
+        if self.inscribe_filter.mint_pass_tx.contains(&insc.tx_hash) {
+            return true;
         }
 
         if token.mint_finished {

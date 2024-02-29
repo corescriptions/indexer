@@ -1,7 +1,7 @@
 use rocksdb::TransactionDB;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{Arc, Mutex, RwLock},
 };
 
@@ -10,6 +10,13 @@ pub const TRANSFER_TX_HEX_LENGTH: usize = 64;
 
 pub const APP_PROTO_MARKET: &'static str = "market";
 pub const APP_PROTO_COLLECTION: &'static str = "collection";
+
+// pub const MIME_CATEGORY_NULL: &'static str = "";
+// pub const MIME_CATEGORY_TEXT: &'static str = "text";
+// pub const MIME_CATEGORY_IMAGE: &'static str = "image";
+// pub const MIME_CATEGORY_TRANSFER: &'static str = "transfer";
+// pub const MIME_CATEGORY_JSON: &'static str = "application/json";
+// pub const MIME_CATEGORY_INVOKE: &'static str = "invoke";
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum InscriptionVerifiedStatus {
@@ -115,7 +122,7 @@ pub struct Indexer {
     pub worker_inscribe: Arc<WorkerInscribe>,
 }
 
-pub struct InscribeContext {
+pub struct InscribeContext<'a> {
     pub db: Arc<RwLock<rocksdb::TransactionDB>>,
     pub inscriptions: Vec<Inscription>,
     pub inscriptions_holder: HashMap<u64, String>,
@@ -123,10 +130,13 @@ pub struct InscribeContext {
 
     pub token_cache: HashMap<String, InscriptionToken>,
     pub token_balance_change: HashMap<String, HashMap<String, i64>>,
+
+    pub inscribe_filter: &'a InscribeFilter,
 }
 
 pub struct WorkerInscribe {
     pub db: Arc<RwLock<TransactionDB>>,
+    pub inscribe_filter: InscribeFilter,
 }
 
 pub struct WorkerSyncState {
@@ -138,4 +148,10 @@ pub struct WorkerSyncState {
 pub struct WorkerSync {
     pub db: Arc<RwLock<rocksdb::TransactionDB>>,
     pub state: Arc<Mutex<WorkerSyncState>>,
+}
+
+pub struct InscribeFilter {
+    pub tx_filter: HashSet<String>,
+    pub block_filter: HashSet<u64>,
+    pub mint_pass_tx: HashSet<String>,
 }
