@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 pub fn register(config: &mut web::ServiceConfig) {
     config.service(tokens);
+    config.service(token_holders);
     config.service(token_balance);
 }
 
@@ -17,7 +18,7 @@ fn contains_chinese_characters(s: &str) -> bool {
 #[derive(Debug, Serialize, Deserialize)]
 struct TokensParams {
     page: Option<u64>,
-    order_type: Option<String>,
+    order_by: Option<String>,
     mint_finished: Option<bool>,
 }
 
@@ -26,7 +27,7 @@ async fn tokens(info: Query<TokensParams>, state: WebData) -> impl Responder {
     let db = state.db.read().unwrap();
     let page = info.page.unwrap_or(1) - 1;
     let mut list = db.get_tokens_list();
-    let order_type = &info.order_type;
+    let order_type = &info.order_by;
 
     match order_type.as_deref() {
         Some("holders") => {
@@ -56,6 +57,41 @@ async fn tokens(info: Query<TokensParams>, state: WebData) -> impl Responder {
     } else {
         HttpResponse::response_data(Vec::<InscriptionToken>::new())
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TokenHoldersParams {
+    page: Option<u64>,
+    tick: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TokenHoldersResponse {
+    address: String,
+    balance: u64,
+}
+
+#[get("/token_holders")]
+async fn token_holders(info: Query<TokenHoldersParams>, state: WebData) -> impl Responder {
+    let db = state.db.read().unwrap();
+    let page = info.page.unwrap_or(1) - 1;
+    let start_key = make_index_key(KEY_INSC_BALANCE_INDEX_TICK_BALANCE_HOLDER, &info.tick);
+    let key_list = db.get_items(
+        &start_key,
+        &start_key,
+        page * PAGE_SIZE,
+        PAGE_SIZE,
+        rocksdb::Direction::Forward,
+    );
+
+    let mut holders: Vec<TokenHoldersResponse> = Vec::new();
+    for (key, value) in &key_list {
+        let address = String::from_utf8(key[key.len() - 42..].to_vec()).unwrap();
+        let balance = u64::from_be_bytes(value.as_slice().try_into().unwrap());
+        holders.push(TokenHoldersResponse { address, balance });
+    }
+
+    HttpResponse::response_data(holders)
 }
 
 #[derive(Debug, Serialize, Deserialize)]

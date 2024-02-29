@@ -108,7 +108,7 @@ impl<'a> InscribeTxn<'a> for Transaction<'a, TransactionDB> {
             let old_key_tick_balance_holder = make_index_key3(
                 KEY_INSC_BALANCE_INDEX_TICK_BALANCE_HOLDER,
                 tick,
-                num_index!(old_balance),
+                num_index_desc!(old_balance),
                 holder,
             );
             let old_key_holder_tick = make_index_key2(KEY_INSC_BALANCE_INDEX_HOLDER_TICK, holder, tick);
@@ -131,7 +131,7 @@ impl<'a> InscribeTxn<'a> for Transaction<'a, TransactionDB> {
             let new_key_tick_holder = make_index_key3(
                 KEY_INSC_BALANCE_INDEX_TICK_BALANCE_HOLDER,
                 tick,
-                num_index!(new_balance),
+                num_index_desc!(new_balance),
                 holder,
             );
             let new_key_holder_tick = make_index_key2(KEY_INSC_BALANCE_INDEX_HOLDER_TICK, holder, tick);
