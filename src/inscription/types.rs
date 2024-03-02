@@ -131,12 +131,12 @@ pub struct InscribeContext<'a> {
     pub token_cache: HashMap<String, InscriptionToken>,
     pub token_balance_change: HashMap<String, HashMap<String, i64>>,
     pub token_transfers: Vec<(String, u64)>,
-    pub inscribe_filter: &'a InscribeFilter,
+    pub inscribe_patch: &'a InscribePatch,
 }
 
 pub struct WorkerInscribe {
     pub db: Arc<RwLock<TransactionDB>>,
-    pub inscribe_filter: InscribeFilter,
+    pub inscribe_patch: InscribePatch,
 }
 
 pub struct WorkerSyncState {
@@ -150,7 +150,7 @@ pub struct WorkerSync {
     pub state: Arc<Mutex<WorkerSyncState>>,
 }
 
-pub struct InscribeFilter {
+pub struct InscribePatch {
     pub tx_filter: HashSet<String>,
     pub block_filter: HashSet<u64>,
     pub mint_pass_tx: HashSet<String>,

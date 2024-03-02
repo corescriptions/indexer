@@ -150,7 +150,7 @@ impl<'a> ProcessBlockContextJsonToken for InscribeContext<'a> {
             return false;
         }
 
-        if self.inscribe_filter.mint_pass_tx.contains(&insc.tx_hash) {
+        if self.inscribe_patch.mint_pass_tx.contains(&insc.tx_hash) {
             return true;
         }
 

@@ -13,7 +13,7 @@ use std::{
 };
 
 impl<'a> InscribeContext<'a> {
-    pub fn new(db: Arc<RwLock<rocksdb::TransactionDB>>, inscribe_filter: &'a InscribeFilter) -> Self {
+    pub fn new(db: Arc<RwLock<rocksdb::TransactionDB>>, inscribe_filter: &'a InscribePatch) -> Self {
         InscribeContext {
             db: db.clone(),
             inscriptions: Vec::new(),
@@ -22,7 +22,7 @@ impl<'a> InscribeContext<'a> {
             token_cache: db.read().unwrap().get_tokens(),
             token_balance_change: HashMap::new(),
             token_transfers: Vec::new(),
-            inscribe_filter,
+            inscribe_patch: inscribe_filter,
         }
     }
 
@@ -85,8 +85,8 @@ impl<'a> InscribeContext<'a> {
         let mut inscriptions = std::mem::take(&mut self.inscriptions);
 
         for insc in &mut inscriptions {
-            if self.inscribe_filter.tx_filter.contains(&insc.tx_hash)
-                || self.inscribe_filter.block_filter.contains(&insc.blocknumber)
+            if self.inscribe_patch.tx_filter.contains(&insc.tx_hash)
+                || self.inscribe_patch.block_filter.contains(&insc.blocknumber)
             {
                 insc.verified = InscriptionVerifiedStatus::Failed;
             } else {

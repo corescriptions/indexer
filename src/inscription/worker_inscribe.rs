@@ -1,9 +1,9 @@
 use super::{
     db::InscribeDB,
-    inscribe_filter::INSCRIBE_FILTER_DATA,
-    types::{InscribeContext, InscribeFilter, Inscription, WorkerInscribe},
+    inscribe_patch::INSCRIBE_PATCH_DATA,
+    types::{InscribeContext, InscribePatch, Inscription, WorkerInscribe},
 };
-use crate::{config::INSCRIBE_FILTER_ENABLE, global::sleep_ms};
+use crate::global::sleep_ms;
 use log::info;
 use rocksdb::TransactionDB;
 use serde::{Deserialize, Serialize};
@@ -23,7 +23,7 @@ impl WorkerInscribe {
     pub fn new(db: Arc<RwLock<TransactionDB>>) -> Self {
         WorkerInscribe {
             db,
-            inscribe_filter: Self::load_inscribe_filter(),
+            inscribe_patch: Self::load_inscribe_filter(),
         }
     }
 
@@ -64,7 +64,7 @@ impl WorkerInscribe {
 
         let insc_list = self.load_block(current_blocknumber);
 
-        let mut context = InscribeContext::new(self.db.clone(), &self.inscribe_filter);
+        let mut context = InscribeContext::new(self.db.clone(), &self.inscribe_patch);
         context.inscriptions = insc_list;
         context.inscribe();
         context.save();
@@ -72,16 +72,8 @@ impl WorkerInscribe {
         return true;
     }
 
-    fn load_inscribe_filter() -> InscribeFilter {
-        if !*INSCRIBE_FILTER_ENABLE {
-            return InscribeFilter {
-                tx_filter: HashSet::new(),
-                block_filter: HashSet::new(),
-                mint_pass_tx: HashSet::new(),
-            };
-        }
-
-        let filter_config: InscribeFilterConfig = match serde_json::from_str(&INSCRIBE_FILTER_DATA) {
+    fn load_inscribe_filter() -> InscribePatch {
+        let filter_config: InscribeFilterConfig = match serde_json::from_str(&INSCRIBE_PATCH_DATA) {
             Ok(filter) => filter,
             Err(_) => {
                 panic!("Unable to parse inscribe_filter.json");
@@ -103,7 +95,7 @@ impl WorkerInscribe {
             mint_pass_tx_set.insert(tx.to_string());
         }
 
-        InscribeFilter {
+        InscribePatch {
             tx_filter: tx_filter_set,
             block_filter: block_filter_set,
             mint_pass_tx: mint_pass_tx_set,

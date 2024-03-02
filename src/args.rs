@@ -64,7 +64,7 @@ pub struct Args {
     pub open_files_limit: u64,
 
     /// The market address list
-    #[arg(long, default_value = "[]")]
+    #[arg(long, default_value = "0xa66d17a09dc205b90e618c52fefc95d11bef6c91,0xa8ab79a4172713e2d77e31ad9594c72483299bfe")]
     pub market_address_list: Vec<String>,
 }
 

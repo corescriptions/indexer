@@ -1,4 +1,10 @@
-pub static INSCRIBE_FILTER_DATA: &str = r#"{
+/**************** NOTICE ****************
+ * Because the ancient indexer did not correctly index some blocks and txs when inscribing,
+ * we had to add this patch module to adapt to the new version of the indexer, so as to fix historical data.
+ * This patch only affects for ancient data, and will not be used in the future.
+ **************************************/
+
+pub static INSCRIBE_PATCH_DATA: &str = r#"{
     "tx_filter": [
         "0xafa201b052bb041b4519a5d92172b7d79e8c88d833e89113a2f6eaf332ba33c7",
         "0xb11aebbcc41f5c2020d80109b477be0a065ed38b0f4d1454f6c87080190d7540",
