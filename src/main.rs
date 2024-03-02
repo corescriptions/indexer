@@ -14,7 +14,7 @@ fn adjust_open_files_limit() {
         rlim_max: 0,
     };
     unsafe { libc::getrlimit(libc::RLIMIT_NOFILE, &mut rlimit) };
-    println!("current open files limit: {}", rlimit.rlim_cur);
+    info!("current open files limit: {}", rlimit.rlim_cur);
 
     let new_limit = libc::rlimit {
         rlim_cur: limit,
@@ -25,7 +25,7 @@ fn adjust_open_files_limit() {
     unsafe {
         libc::getrlimit(libc::RLIMIT_NOFILE, &mut rlimit);
     }
-    println!("new open files limit: {}", rlimit.rlim_cur);
+    info!("new open files limit: {}", rlimit.rlim_cur);
 }
 
 #[tokio::main]
@@ -33,6 +33,8 @@ async fn main() {
     dotenv().ok();
 
     log4rs::init_file("./log4rs.yaml", Default::default()).unwrap();
+
+    info!("{:?}", *insdexer::config::ARGS);
 
     adjust_open_files_limit();
 
