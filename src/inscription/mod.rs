@@ -6,6 +6,7 @@ pub mod inscribe_collection;
 pub mod inscribe_context;
 pub mod inscribe_json;
 pub mod inscribe_token;
+pub mod inscribe_filter;
 pub mod marketplace;
 pub mod trait_json_value;
 pub mod trait_tx;

@@ -1,5 +1,6 @@
 use super::{
     db::InscribeDB,
+    inscribe_filter::INSCRIBE_FILTER_DATA,
     types::{InscribeContext, InscribeFilter, Inscription, WorkerInscribe},
 };
 use crate::{config::INSCRIBE_FILTER_ENABLE, global::sleep_ms};
@@ -8,8 +9,6 @@ use rocksdb::TransactionDB;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
-    fs::File,
-    io::Read,
     sync::{Arc, RwLock},
 };
 
@@ -82,19 +81,7 @@ impl WorkerInscribe {
             };
         }
 
-        let mut file = match File::open("./inscribe_filter.json") {
-            Ok(file) => file,
-            Err(_) => {
-                panic!("Unable to open inscribe_filter.json");
-            }
-        };
-
-        let mut json_data = String::new();
-        if file.read_to_string(&mut json_data).is_err() {
-            panic!("Unable to read inscribe_filter.json");
-        }
-
-        let filter_config: InscribeFilterConfig = match serde_json::from_str(&json_data) {
+        let filter_config: InscribeFilterConfig = match serde_json::from_str(&INSCRIBE_FILTER_DATA) {
             Ok(filter) => filter,
             Err(_) => {
                 panic!("Unable to parse inscribe_filter.json");

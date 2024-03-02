@@ -1,4 +1,4 @@
-{
+pub static INSCRIBE_FILTER_DATA: &str = r#"{
     "tx_filter": [
         "0xafa201b052bb041b4519a5d92172b7d79e8c88d833e89113a2f6eaf332ba33c7",
         "0xb11aebbcc41f5c2020d80109b477be0a065ed38b0f4d1454f6c87080190d7540",
@@ -50,7 +50,7 @@
         11819021,
         11827838,
         11827839
-        
+
     ],
     "mint_pass_tx": [
         "0x28e8e68f992350448e50489c57ac343f4efe586a9f018316a0a1e5a8270dc769",
@@ -2459,4 +2459,4 @@
         "0x539b99689927ebeceebd3ad557e1cd2f3b45cf2aebcd2baf5019cd6612256766",
         "0x72b88263b285ff130ffbb5b6dd9f113f7e2e942c8af835a6a6c7bf59b9257358"
     ]
-}
+}"#;
