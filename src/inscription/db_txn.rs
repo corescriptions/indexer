@@ -87,7 +87,7 @@ impl<'a> InscribeTxn<'a> for Transaction<'a, TransactionDB> {
     }
 
     fn inscription_nft_collection_insert(&self, insc: &Inscription) {
-        let index_key_id = make_index_key(KEY_INSC_NFT_COLL_INDEX_ID, num_index!(insc.id));
+        let index_key_id = make_index_key(KEY_INSC_NFT_COLL_INDEX_ID, num_index_desc!(insc.id));
         self.put(index_key_id.as_bytes(), insc.id.to_be_bytes()).unwrap();
     }
 

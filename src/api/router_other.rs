@@ -1,20 +1,30 @@
 use super::{HttpResponseExt, WebData};
 use crate::inscription::db::*;
 use actix_web::{get, web, HttpResponse, Responder};
+use serde_json::json;
 
 pub fn register(config: &mut web::ServiceConfig) {
-    config.service(collection_trending);
+    config.service(status);
 }
 
-#[get("/trending_nft_collection")]
-async fn collection_trending(state: WebData) -> impl Responder {
-    match state
-        .db
-        .read()
-        .unwrap()
-        .get_inscription_by_tx("0x355b9e1d84603a57e06b2d81c0f90d43438959519c987c7c6a03f025b5fc999d")
-    {
-        Some(insc) => HttpResponse::response_data(insc),
+#[get("/status")]
+async fn status(state: WebData) -> impl Responder {
+    let db = state.db.read().unwrap();
+    let top_insc_id = db.get_top_inscription_id();
+    let sync_blocknumber = db.get_sync_blocknumber();
+
+    match db.get_inscription_by_id(top_insc_id) {
+        Some(insc) => {
+            let current_blocknumber = *state.blocknumber.read().unwrap();
+            let insc_blocknumber = insc.blocknumber;
+            let result = json!({
+                "behind": insc_blocknumber as i64 - current_blocknumber as i64,
+                "block_number": current_blocknumber,
+                "block_number_index": insc_blocknumber,
+                "block_number_sync": sync_blocknumber,
+            });
+            HttpResponse::response_data(result)
+        }
         None => HttpResponse::response_error_notfound(),
     }
 }

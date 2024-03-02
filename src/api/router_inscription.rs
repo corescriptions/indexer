@@ -6,14 +6,13 @@ use crate::{
 use actix_web::{get, web, web::Query, HttpResponse, Responder};
 use rocksdb::Direction;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 pub fn register(config: &mut web::ServiceConfig) {
     config.service(inscription);
+    config.service(inscription_path);
     config.service(recent);
     config.service(transactions);
     config.service(created);
-    config.service(index_behind);
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -25,7 +24,7 @@ struct InscriptionsParams {
 #[get("/inscription")]
 async fn inscription(query: Query<InscriptionsParams>, state: WebData) -> impl Responder {
     let db = state.db.read().unwrap();
-    let insc = if let Some(insc_id) = query.id {
+    let result = if let Some(insc_id) = query.id {
         db.get_inscription_by_id(insc_id)
     } else if let Some(insc_tx) = &query.tx {
         db.get_inscription_by_tx(insc_tx)
@@ -33,7 +32,29 @@ async fn inscription(query: Query<InscriptionsParams>, state: WebData) -> impl R
         None
     };
 
-    match insc {
+    match result {
+        Some(insc) => {
+            let mut insc_json = serde_json::to_value(&insc).unwrap();
+            if insc.signature.is_some() {
+                let holder = db.get_inscription_nft_holder_by_id(insc.id);
+                insc_json["owner"] = serde_json::to_value(holder).unwrap();
+            }
+            HttpResponse::response_data(insc_json)
+        }
+        None => HttpResponse::response_error_notfound(),
+    }
+}
+
+#[get("/inscription/{path}")]
+async fn inscription_path(path: web::Path<String>, state: WebData) -> impl Responder {
+    let db = state.db.read().unwrap();
+    let path_value = path.into_inner();
+    let result = match path_value.parse::<u64>() {
+        Ok(id) => db.get_inscription_by_id(id),
+        Err(_) => db.get_inscription_by_tx(&path_value),
+    };
+
+    match result {
         Some(insc) => {
             let mut insc_json = serde_json::to_value(&insc).unwrap();
             if insc.signature.is_some() {
@@ -99,26 +120,4 @@ async fn created(info: Query<CreatedParams>, state: WebData) -> impl Responder {
         }
     }
     HttpResponse::response_data(insc_list)
-}
-
-#[get("/status")]
-async fn index_behind(state: WebData) -> impl Responder {
-    let db = state.db.read().unwrap();
-    let top_insc_id = db.get_top_inscription_id();
-    let sync_blocknumber = db.get_sync_blocknumber();
-
-    match db.get_inscription_by_id(top_insc_id) {
-        Some(insc) => {
-            let current_blocknumber = *state.blocknumber.read().unwrap();
-            let insc_blocknumber = insc.blocknumber;
-            let result = json!({
-                "behind": insc_blocknumber as i64 - current_blocknumber as i64,
-                "block_number": current_blocknumber,
-                "block_number_index": insc_blocknumber,
-                "block_number_sync": sync_blocknumber,
-            });
-            HttpResponse::response_data(result)
-        }
-        None => HttpResponse::response_error_notfound(),
-    }
 }
