@@ -8,6 +8,7 @@ pub fn register(config: &mut web::ServiceConfig) {
     config.service(tokens);
     config.service(token_holders);
     config.service(token_balance);
+    config.service(token_txs);
 }
 
 fn contains_chinese_characters(s: &str) -> bool {
@@ -75,7 +76,7 @@ struct TokenHoldersResponse {
 async fn token_holders(info: Query<TokenHoldersParams>, state: WebData) -> impl Responder {
     let db = state.db.read().unwrap();
     let page = info.page.unwrap_or(1) - 1;
-    let start_key = make_index_key(KEY_INSC_BALANCE_INDEX_TICK_BALANCE_HOLDER, &info.tick);
+    let start_key = make_index_key(KEY_INSC_BALANCE_INDEX_TICK_BALANCE_HOLDER, &info.tick) + ":";
     let key_list = db.get_items(
         &start_key,
         &start_key,
@@ -118,4 +119,29 @@ async fn token_balance(info: Query<TokenBalanceParams>, state: WebData) -> impl 
         token_list.push(TokenBalanceResponse { tick, balance });
     }
     HttpResponse::response_data(token_list)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TokenTxsParams {
+    tick: String,
+    page: Option<u64>,
+}
+
+#[get("/token_txs")]
+async fn token_txs(info: Query<TokenTxsParams>, state: WebData) -> impl Responder {
+    let db = state.db.read().unwrap();
+    let page = info.page.unwrap_or(1) - 1;
+    let start_key = make_index_key(KEY_INSC_TOKEN_TRANSFER, info.tick.as_str()) + ":";
+    let key_list = db.get_item_keys(
+        &start_key,
+        &start_key,
+        page * PAGE_SIZE,
+        PAGE_SIZE,
+        rocksdb::Direction::Forward,
+    );
+
+    let id_list = db_index2id_desc(key_list);
+    let insc_list = db.get_inscriptions_by_id(&id_list);
+
+    HttpResponse::response_data(insc_list)
 }

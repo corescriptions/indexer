@@ -89,19 +89,19 @@ impl<'a> MarketPlace for InscribeContext<'a> {
             return false;
         }
 
-        let holder = self.get_inscription_holder(order.nft_id);
+        let holder = self.get_nft_holder(order.nft_id);
         assert!(MARKET_ADDRESS_LIST.contains(&holder));
 
         let mut trans: Vec<(u64, u64, u64)> = vec![(insc.id, order.nft_id, 0)];
 
-        match self.inscriptions_holder.get_mut(&order.nft_id) {
+        match self.nft_holders.get_mut(&order.nft_id) {
             Some(holder) => *holder = insc.from.clone(),
             None => {
-                self.inscriptions_holder.insert(order.nft_id, insc.from.clone());
+                self.nft_holders.insert(order.nft_id, insc.from.clone());
             }
         }
 
-        self.inscriptions_transfer.append(&mut trans);
+        self.nft_transfers.append(&mut trans);
 
         info!(
             "[indexer] market_buy_nft: {} {} {} {}",
@@ -144,19 +144,19 @@ impl<'a> MarketPlace for InscribeContext<'a> {
     }
 
     fn execute_market_cancel_nft(&mut self, insc: &Inscription, order: &MarketOrder) -> bool {
-        let holder = self.get_inscription_holder(order.nft_id);
+        let holder = self.get_nft_holder(order.nft_id);
         assert!(MARKET_ADDRESS_LIST.contains(&holder));
 
         let mut trans: Vec<(u64, u64, u64)> = vec![(insc.id, order.nft_id, 0)];
 
-        match self.inscriptions_holder.get_mut(&order.nft_id) {
+        match self.nft_holders.get_mut(&order.nft_id) {
             Some(holder) => *holder = insc.from.clone(),
             None => {
-                self.inscriptions_holder.insert(order.nft_id, insc.from.clone());
+                self.nft_holders.insert(order.nft_id, insc.from.clone());
             }
         }
 
-        self.inscriptions_transfer.append(&mut trans);
+        self.nft_transfers.append(&mut trans);
 
         debug!(
             "[indexer] market_cancel_nft: {} {} {} {}",

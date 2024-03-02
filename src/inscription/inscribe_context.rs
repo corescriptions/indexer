@@ -17,10 +17,11 @@ impl<'a> InscribeContext<'a> {
         InscribeContext {
             db: db.clone(),
             inscriptions: Vec::new(),
-            inscriptions_holder: HashMap::new(),
-            inscriptions_transfer: Vec::new(),
+            nft_holders: HashMap::new(),
+            nft_transfers: Vec::new(),
             token_cache: db.read().unwrap().get_tokens(),
             token_balance_change: HashMap::new(),
+            token_transfers: Vec::new(),
             inscribe_filter,
         }
     }
@@ -43,7 +44,8 @@ impl<'a> InscribeContext<'a> {
         txn.set_top_inscription_id(self.inscriptions.last().unwrap().id);
 
         self.save_token(&db, &txn);
-        self.save_transfer(&db, &txn);
+        self.save_token_transfer(&txn);
+        self.save_nft_transfer(&db, &txn);
 
         txn.commit().unwrap();
 
@@ -97,7 +99,7 @@ impl<'a> InscribeContext<'a> {
 
     fn process_inscribe(&mut self, insc: &mut Inscription) {
         let ins_result = match insc.mime_category {
-            InscriptionMimeCategory::Transfer => self.process_inscribe_transfer(insc),
+            InscriptionMimeCategory::Transfer => self.process_inscribe_nft_transfer(insc),
             InscriptionMimeCategory::Json => self.process_inscribe_json(insc),
             InscriptionMimeCategory::Text | InscriptionMimeCategory::Image => self.process_inscribe_plain(insc),
             InscriptionMimeCategory::Invoke => self.process_inscribe_invoke(insc),
@@ -127,8 +129,8 @@ impl<'a> InscribeContext<'a> {
         true
     }
 
-    pub fn get_inscription_holder(&self, insc_id: u64) -> String {
-        if let Some(holder) = self.inscriptions_holder.get(&insc_id) {
+    pub fn get_nft_holder(&self, insc_id: u64) -> String {
+        if let Some(holder) = self.nft_holders.get(&insc_id) {
             holder.to_string()
         } else {
             let holder = self.db.read().unwrap().get_inscription_nft_holder_by_id(insc_id).unwrap();
@@ -136,21 +138,21 @@ impl<'a> InscribeContext<'a> {
         }
     }
 
-    fn process_inscribe_transfer(&mut self, insc: &Inscription) -> bool {
+    fn process_inscribe_nft_transfer(&mut self, insc: &Inscription) -> bool {
         let mut trans: Vec<(u64, u64, u64)> = Vec::new();
         let mut index = 0;
 
         for i in (0..insc.mime_data.len()).step_by(TRANSFER_TX_HEX_LENGTH) {
             let item_insc_tx = &insc.mime_data[i..i + TRANSFER_TX_HEX_LENGTH];
             if let Some(item_insc) = self.db.read().unwrap().get_inscription_by_tx(item_insc_tx) {
-                let item_holder = self.get_inscription_holder(item_insc.id);
+                let item_holder = self.get_nft_holder(item_insc.id);
                 if item_holder == insc.from {
                     trans.push((insc.id, item_insc.id, index));
                     index += 1;
-                    match self.inscriptions_holder.get_mut(&item_insc.id) {
+                    match self.nft_holders.get_mut(&item_insc.id) {
                         Some(holder) => *holder = insc.to.clone(),
                         None => {
-                            self.inscriptions_holder.insert(item_insc.id, insc.to.clone());
+                            self.nft_holders.insert(item_insc.id, insc.to.clone());
                         }
                     }
                 } else {
@@ -166,16 +168,22 @@ impl<'a> InscribeContext<'a> {
             }
         }
 
-        self.inscriptions_transfer.append(&mut trans);
+        self.nft_transfers.append(&mut trans);
         true
     }
 
-    fn save_transfer(&self, db: &TransactionDB, txn: &rocksdb::Transaction<rocksdb::TransactionDB>) {
-        for (insc_id, transfer_insc_id, index) in &self.inscriptions_transfer {
+    fn save_token_transfer(&self, txn: &rocksdb::Transaction<rocksdb::TransactionDB>) {
+        for (tick, id) in &self.token_transfers {
+            txn.inscription_token_transfer_insert(tick, *id);
+        }
+    }
+
+    fn save_nft_transfer(&self, db: &TransactionDB, txn: &rocksdb::Transaction<rocksdb::TransactionDB>) {
+        for (insc_id, transfer_insc_id, index) in &self.nft_transfers {
             txn.inscription_nft_transfer_insert(*insc_id, *transfer_insc_id, *index);
         }
 
-        for (insc_id, holder) in self.inscriptions_holder.iter() {
+        for (insc_id, holder) in self.nft_holders.iter() {
             txn.inscription_nft_holder_update(db, *insc_id, holder);
         }
     }

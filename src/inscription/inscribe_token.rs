@@ -4,7 +4,7 @@ use super::{
     trait_json_value::JsonValueTrait,
     types::{InscribeContext, Inscription, InscriptionToken},
 };
-use crate::config::{MARKET_ADDRESS_LIST, START_BLOCK_MINT};
+use crate::config::{MARKET_ADDRESS_LIST, START_BLOCK_MINT, TICK_MAX_LEN};
 use log::{debug, info};
 use std::collections::HashMap;
 
@@ -55,6 +55,10 @@ impl<'a> ProcessBlockContextJsonToken for InscribeContext<'a> {
 
     fn check_deploy(&self, insc: &Inscription) -> bool {
         let tick = insc.json["tick"].as_str().unwrap();
+        if tick.len() > *TICK_MAX_LEN {
+            return false;
+        }
+
         let token_max = match insc.json["max"].parse_u64() {
             Some(value) => value,
             None => {
@@ -262,6 +266,7 @@ impl<'a> ProcessBlockContextJsonToken for InscribeContext<'a> {
         if transfer_amount <= balance_from {
             self.token_balance_change_update(tick, &insc.from, -(transfer_amount as i64));
             self.token_balance_change_update(tick, &insc.to, transfer_amount as i64);
+            self.token_transfers.push((tick.to_string(), insc.id));
             info!(
                 "[indexer] token transfer: {} {} {} {} {} {}",
                 insc.tx_hash, insc.from, insc.to, tick, balance_from, transfer_amount

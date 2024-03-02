@@ -125,12 +125,12 @@ pub struct Indexer {
 pub struct InscribeContext<'a> {
     pub db: Arc<RwLock<rocksdb::TransactionDB>>,
     pub inscriptions: Vec<Inscription>,
-    pub inscriptions_holder: HashMap<u64, String>,
-    pub inscriptions_transfer: Vec<(u64, u64, u64)>,
+    pub nft_holders: HashMap<u64, String>,
+    pub nft_transfers: Vec<(u64, u64, u64)>,
 
     pub token_cache: HashMap<String, InscriptionToken>,
     pub token_balance_change: HashMap<String, HashMap<String, i64>>,
-
+    pub token_transfers: Vec<(String, u64)>,
     pub inscribe_filter: &'a InscribeFilter,
 }
 

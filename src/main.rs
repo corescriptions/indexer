@@ -1,5 +1,5 @@
 use dotenv::dotenv;
-use insdexer::{api, config::OPEN_FILES_LIMIT, inscription, plog};
+use insdexer::{api, config::OPEN_FILES_LIMIT, inscription};
 use log::info;
 use tokio;
 
@@ -31,7 +31,8 @@ fn adjust_open_files_limit() {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    plog::init_log();
+
+    log4rs::init_file("./log4rs.yaml", Default::default()).unwrap();
 
     adjust_open_files_limit();
 

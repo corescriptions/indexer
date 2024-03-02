@@ -102,6 +102,11 @@ impl<'a> InscribeTxn<'a> for Transaction<'a, TransactionDB> {
         self.put(index_key_tick_i.as_bytes(), token.insc_id.to_be_bytes()).unwrap();
     }
 
+    fn inscription_token_transfer_insert(&self, tick: &str, id: u64) {
+        let index_key_transfer = make_index_key2(KEY_INSC_TOKEN_TRANSFER, tick, num_index_desc!(id));
+        self.put(index_key_transfer.as_bytes(), "").unwrap();
+    }
+
     fn inscription_token_banalce_update(&self, db: &TransactionDB, tick: &str, holder: &str, balance_change: i64) -> i64 {
         let old_balance = db.get_token_balance(tick, holder);
         if old_balance > 0 {

@@ -49,6 +49,9 @@ pub const KEY_INSC_TOKEN_INDEX_ID: &'static str = "insc_token_id";
 pub const KEY_INSC_TOKEN_INDEX_TICK: &'static str = "insc_token_tick";
 pub const KEY_INSC_TOKEN_INDEX_TICK_I: &'static str = "insc_token_itick";
 
+// token transfer
+pub const KEY_INSC_TOKEN_TRANSFER: &'static str = "insc_token_transfer_tick";
+
 // token balance
 pub const KEY_INSC_BALANCE_INDEX_TICK_BALANCE_HOLDER: &'static str = "insc_balance_tick_balance_holder";
 pub const KEY_INSC_BALANCE_INDEX_HOLDER_TICK: &'static str = "insc_balance_holder_tick";
@@ -103,6 +106,7 @@ pub trait InscribeTxn<'a> {
     fn inscription_nft_transfer_insert(&self, insc_id: u64, transfer_insc_id: u64, index: u64);
     fn inscription_nft_collection_insert(&self, insc: &Inscription);
     fn inscription_token_insert(&self, token: &InscriptionToken);
+    fn inscription_token_transfer_insert(&self, tick: &str, id: u64);
     fn inscription_token_update(&self, token: &InscriptionToken);
     fn inscription_token_banalce_update(&self, db: &TransactionDB, tick: &str, holder: &str, balance_change: i64) -> i64;
     fn delete_keys(&self, prefix: &str, max: u64) -> u64;
