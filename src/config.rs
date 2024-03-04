@@ -18,5 +18,5 @@ lazy_static! {
     pub static ref HTTP_PORT: u16 = ARGS.http_port;
     pub static ref API_ONLY: bool = ARGS.api_only;
     pub static ref OPEN_FILES_LIMIT: u64 = ARGS.open_files_limit;
-    pub static ref MARKET_ADDRESS_LIST: Vec<String> = ARGS.market_address_list.clone();
+    pub static ref MARKET_ADDRESS_LIST: Vec<String> = ARGS.market_address_list.split(',').map(|s| s.to_string()).collect();
 }
