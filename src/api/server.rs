@@ -4,6 +4,7 @@ use crate::{
     ethereum::{init_web3_http, Web3Ex},
     global::sleep_ms,
 };
+use actix_cors::Cors;
 use actix_web::{get, middleware, web, App, HttpResponse, HttpServer, Responder};
 use log::{info, warn};
 use rocksdb::TransactionDB;
@@ -58,6 +59,7 @@ pub async fn run(db: Arc<RwLock<TransactionDB>>) {
         App::new()
             .app_data(state.clone())
             .wrap(middleware::Logger::default())
+            .wrap(Cors::default().allow_any_origin().allow_any_method().allow_any_header())
             .default_service(web::route().to(not_found))
             .service(index)
             .configure(super::router_inscription::register)

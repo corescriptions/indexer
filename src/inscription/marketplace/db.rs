@@ -11,6 +11,7 @@ pub const KEY_MARKET_ORDER_INDEX_SELLER: &'static str = "market_seller-sort-id";
 pub const KEY_MARKET_ORDER_INDEX_TICK_PRICE: &'static str = "market_tick_price-id";
 pub const KEY_MARKET_ORDER_INDEX_NFT: &'static str = "market_nft_id";
 pub const KEY_MARKET_ORDER_INDEX_TIME: &'static str = "market_time-id";
+pub const KEY_MARKET_ORDER_INDEX_TICK_TIME: &'static str = "market_tick_time-id";
 pub const KEY_MARKET_ORDER_INDEX_SELLER_CLOSE_CANCEL: &'static str = "market_seller_close_cancel-sort-id";
 
 pub trait InscribeMarketDB: TxnDB {
@@ -46,10 +47,17 @@ impl<'a> InscribeMarketTxn<'a> for Transaction<'a, TransactionDB> {
             &order.order_id,
         );
         let index_key_time = make_index_key2(KEY_MARKET_ORDER_INDEX_TIME, num_index_desc!(order.timestamp), &order.order_id);
+        let index_key_tick_time = make_index_key3(
+            KEY_MARKET_ORDER_INDEX_TICK_TIME,
+            &order.tick,
+            num_index_desc!(order.timestamp),
+            &order.order_id,
+        );
 
         self.put(index_key_id.as_bytes(), order_data.as_bytes()).unwrap();
         self.put(index_key_seller.as_bytes(), "").unwrap();
         self.put(index_key_time.as_bytes(), "").unwrap();
+        self.put(index_key_tick_time.as_bytes(), "").unwrap();
     }
 
     fn market_order_set_price(&self, db: &TransactionDB, tx_hash: &str, order_id: &str, total_price: u128) {
