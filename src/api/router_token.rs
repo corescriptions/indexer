@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 pub fn register(config: &mut web::ServiceConfig) {
     config.service(tokens);
+    config.service(token_info);
     config.service(token_holders);
     config.service(token_balance);
     config.service(token_txs);

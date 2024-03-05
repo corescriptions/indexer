@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 pub fn register(config: &mut web::ServiceConfig) {
     config.service(market_orders_all);
+    config.service(market_orders_list);
     config.service(market_orders);
     config.service(market_order);
 }
