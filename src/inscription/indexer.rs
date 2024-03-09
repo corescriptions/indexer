@@ -54,8 +54,10 @@ impl Indexer {
         if *REINDEX {
             use super::db::*;
             use super::marketplace::db::*;
+            self.delete_keys(KEY_ROLLBACK_BLOCKNUMBER);
             // KEY_SYNC_BLOCKNUMBER
             // KEY_SYNC_BLOCK_HASH
+
             // KEY_INSC_SYNC_TOP
             self.delete_keys(KEY_INSC_TOP);
 
@@ -75,6 +77,8 @@ impl Indexer {
             self.delete_keys(KEY_INSC_TOKEN_INDEX_ID);
             self.delete_keys(KEY_INSC_TOKEN_INDEX_TICK);
             self.delete_keys(KEY_INSC_TOKEN_INDEX_TICK_I);
+            self.delete_keys(KEY_INSC_TOKEN_TRANSFER);
+
             self.delete_keys(KEY_INSC_BALANCE_INDEX_TICK_BALANCE_HOLDER);
             self.delete_keys(KEY_INSC_BALANCE_INDEX_HOLDER_TICK);
 
