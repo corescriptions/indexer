@@ -1,5 +1,9 @@
 use dotenv::dotenv;
-use insdexer::{adjust_open_files, api, config, inscription};
+use insdexer::{
+    adjust_open_files, api,
+    config::{self, API_ONLY},
+    inscription,
+};
 use log::info;
 use tokio;
 
@@ -19,10 +23,10 @@ async fn main() {
     })
     .expect("Error setting Ctrl-C handler");
 
-    let mut indexer = inscription::types::Indexer::new();
-
-    api::server::run().await;
-
+    let indexer = inscription::types::Indexer::new();
     indexer.init();
+
+    api::server::run(*API_ONLY).await;
+
     indexer.run().await;
 }

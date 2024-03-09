@@ -1,6 +1,6 @@
 use super::{APIState, WebData};
 use crate::{
-    config::{API_ONLY, DB_PATH, HTTP_BIND, HTTP_PORT, WEB3_PROVIDER},
+    config::{DB_PATH, HTTP_BIND, HTTP_PORT, WEB3_PROVIDER},
     ethereum::{init_web3_http, Web3Ex},
     global::sleep_ms,
 };
@@ -50,7 +50,7 @@ async fn blocknumber_refresh(state: WebData) {
     }
 }
 
-pub async fn run() {
+pub async fn run(wait_forever: bool) {
     let state = web::Data::new(Arc::new(APIState::new()));
     tokio::spawn(blocknumber_refresh(state.clone()));
 
@@ -73,7 +73,7 @@ pub async fn run() {
 
     info!("RESTful API server started at http://{}:{}", *HTTP_BIND, *HTTP_PORT);
 
-    if *API_ONLY {
+    if wait_forever {
         info!("Running on API_ONLY mode");
         server.await.unwrap();
     } else {

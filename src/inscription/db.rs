@@ -81,6 +81,8 @@ pub trait InscribeDB: TxnDB {
     fn get_top_inscription_id(&self) -> u64;
     fn get_top_inscription_sync_id(&self) -> u64;
     fn get_sync_blocknumber(&self) -> u64;
+    fn get_rollback_blocknumber(&self) -> u64;
+
     fn get_block_hash(&self, blocknumber: u64) -> Option<String>;
 
     fn get_inscription_by_id(&self, id: u64) -> Option<Inscription>;
@@ -102,6 +104,7 @@ pub trait InscribeTxn<'a> {
     fn set_top_inscription_id(&self, id: u64);
     fn set_top_inscription_sync_id(&self, id: u64);
     fn set_sync_blocknumber(&self, blocknumber: u64);
+    fn set_rollback_blocknumber(&self, blocknumber: u64);
     fn set_block_hash(&self, blocknumber: u64, block_hash: &str);
 
     fn inscription_insert(&self, insc: &Inscription);

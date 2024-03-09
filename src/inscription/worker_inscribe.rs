@@ -102,11 +102,18 @@ impl WorkerInscribe {
         }
     }
 
-    pub async fn run(&self) {
+    async fn run_inscribe(&self) {
         loop {
             if !self.inscribe().await {
                 sleep_ms(3000).await;
             }
         }
+    }
+
+    pub fn run(arc_self: Arc<Self>) {
+        let arc_self1 = arc_self.clone();
+        tokio::spawn(async move {
+            arc_self1.run_inscribe().await;
+        });
     }
 }

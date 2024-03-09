@@ -19,6 +19,10 @@ impl<T: DBBase + TxnDB + DBAccess> InscribeDB for T {
         self.get_u64(KEY_SYNC_BLOCKNUMBER)
     }
 
+    fn get_rollback_blocknumber(&self) -> u64 {
+        self.get_u64(KEY_ROLLBACK_BLOCKNUMBER)
+    }
+
     fn get_block_hash(&self, blocknumber: u64) -> Option<String> {
         let key = make_index_key(KEY_SYNC_BLOCK_HASH, blocknumber);
         self.get_string(&key)
