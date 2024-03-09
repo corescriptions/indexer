@@ -1,3 +1,9 @@
+use std::sync::Mutex;
+
+lazy_static! {
+    pub static ref ROLLBACK_BLOCK: Mutex<u64> = Mutex::new(0);
+}
+
 pub async fn sleep_ms(ms: u64) {
     tokio::time::sleep(tokio::time::Duration::from_millis(ms)).await;
 }

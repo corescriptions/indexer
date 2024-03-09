@@ -19,6 +19,11 @@ impl<T: DBBase + TxnDB + DBAccess> InscribeDB for T {
         self.get_u64(KEY_SYNC_BLOCKNUMBER)
     }
 
+    fn get_block_hash(&self, blocknumber: u64) -> Option<String> {
+        let key = make_index_key(KEY_SYNC_BLOCK_HASH, blocknumber);
+        self.get_string(&key)
+    }
+
     fn inscription_sign_exists(&self, sign: &str) -> bool {
         let key = make_index_key(KEY_INSC_INDEX_SIGN, sign);
         self.get(key.as_bytes()).unwrap().is_some()
@@ -150,7 +155,7 @@ impl<T: DBBase + TxnDB + DBAccess> InscribeDB for T {
                     break;
                 }
 
-                item_list.push((key.to_vec(),value.to_vec()));
+                item_list.push((key.to_vec(), value.to_vec()));
             } else {
                 break;
             }

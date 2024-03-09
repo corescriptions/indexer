@@ -115,6 +115,12 @@ impl<'a> ProcessBlockContextJsonToken for InscribeContext<'a> {
                 mint_finished: false,
                 updated: true,
                 deploy: true,
+
+                market_updated: false,
+                market_volume24h: 0,
+                market_txs24h: 0,
+                market_cap: 0,
+                market_floor_price: 0,
             },
         );
 

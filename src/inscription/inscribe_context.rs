@@ -1,3 +1,5 @@
+use crate::config::MARKET_ADDRESS_LIST;
+
 use super::{
     db::{InscribeDB, InscribeTxn},
     inscribe_json::ProcessBlockContextJson,
@@ -69,12 +71,18 @@ impl<'a> InscribeContext<'a> {
             let token = self.token_cache.get_mut(tick).unwrap();
             token.updated = true;
             for (address, balance_change) in balance_change_coll {
-                let holder_change = txn.inscription_token_banalce_update(&db, tick, address, *balance_change);
+                let holder_change = txn.inscription_token_banalce_update(db, tick, address, *balance_change);
                 token.holders = (token.holders as i64 + holder_change) as u64;
+                if MARKET_ADDRESS_LIST.contains(address) {
+                    token.market_updated = true;
+                }
             }
         }
 
-        for (_, token) in &self.token_cache {
+        for (_, token) in &mut self.token_cache {
+            if token.market_updated {
+                Self::update_token_market_info(db, token);
+            }
             if token.updated {
                 txn.inscription_token_update(token);
             }

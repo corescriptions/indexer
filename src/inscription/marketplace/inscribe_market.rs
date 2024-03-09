@@ -8,10 +8,11 @@ use crate::{
     config::MARKET_ADDRESS_LIST,
     ethereum::{Web3ABILogEvent, Web3LogEvent},
     inscription::{
-        db::InscribeDB,
+        db::{make_index_key, InscribeDB},
         inscribe_token::ProcessBlockContextJsonToken,
+        marketplace::db::KEY_MARKET_ORDER_INDEX_TICK_PRICE,
         trait_json_value::JsonValueTrait,
-        types::{InscribeContext, Inscription, InscriptionMimeCategory, TRANSFER_TX_HEX_LENGTH},
+        types::{InscribeContext, Inscription, InscriptionMimeCategory, InscriptionToken, TRANSFER_TX_HEX_LENGTH},
     },
 };
 use log::{debug, info, warn};
@@ -312,5 +313,45 @@ impl<'a> MarketPlace for InscribeContext<'a> {
         let order_id = "0x".to_string() + &log.get_param("orderId").unwrap().to_string();
 
         txn.market_order_cancel(db, &insc.tx_hash, &order_id);
+    }
+
+    fn update_token_market_info(db: &TransactionDB, token: &mut InscriptionToken) {
+        const MCAP_CALC_COUNT: u64 = 12;
+        let orders = db.market_get_closed_orders_24h(&token.tick);
+        let mut volume24: u128 = 0;
+        let mut mcap: f64 = 0.0;
+        let mut mcap_count = 0;
+
+        for order in &orders {
+            volume24 += order.amount as u128;
+            if mcap_count < MCAP_CALC_COUNT && order.amount >= token.mint_limit {
+                mcap += order.unit_price as f64 * token.mint_max as f64;
+                mcap_count += 1;
+            }
+        }
+
+        token.market_cap = (mcap / mcap_count as f64) as u128;
+        token.market_volume24h = volume24;
+        token.market_txs24h = orders.len() as u64;
+
+        // calculate floor price
+        let floor_prefix = make_index_key(KEY_MARKET_ORDER_INDEX_TICK_PRICE, &token.tick) + ":";
+        let mut iter = db.iterator(rocksdb::IteratorMode::From(
+            floor_prefix.as_bytes(),
+            rocksdb::Direction::Forward,
+        ));
+        while let Some(Ok((key, _))) = iter.next() {
+            if !key.starts_with(floor_prefix.as_bytes()) {
+                break;
+            }
+
+            let key = String::from_utf8(key.to_vec()).unwrap();
+            let order_id = key.rfind(':').map(|i| key[i + 1..].to_string()).unwrap();
+            let order = db.market_get_order_by_id(&order_id).unwrap();
+            if order.amount >= token.mint_limit {
+                token.market_floor_price = order.unit_price;
+                break;
+            }
+        }
     }
 }

@@ -4,7 +4,7 @@ pub mod web3ex;
 use async_trait::async_trait;
 use std::collections::HashMap;
 use web3::{
-    types::{Block, Transaction},
+    types::{Block, Transaction, H256},
     Transport,
 };
 
@@ -13,8 +13,10 @@ pub trait Web3Ex<T: Transport + Send + Sync> {
     async fn get_chain_id(&self) -> u64;
     async fn get_blocknumber(&self) -> Option<u64>;
     async fn get_blocknumber_wait(&self) -> u64;
-    async fn get_block(&self, blocknumber: u64) -> Option<Block<Transaction>>;
+    async fn get_block_with_txs(&self, blocknumber: u64) -> Option<Block<Transaction>>;
     async fn get_block_wait(&self, blocknumber: u64) -> Block<Transaction>;
+    async fn get_block_info(&self, blocknumber: u64) -> Option<Block<H256>>;
+    async fn get_block_info_wait(&self, blocknumber: u64) -> Block<H256>;
     async fn get_event_logs(&self, contracts: &Vec<String>, blocknumber: u64) -> Option<Vec<web3::types::Log>>;
     async fn get_event_logs_wait(&self, contracts: &Vec<String>, blocknumber: u64) -> HashMap<u64, Vec<web3::types::Log>>;
 }

@@ -4,7 +4,7 @@ pub mod market_abi;
 pub mod types;
 
 use self::types::MarketOrder;
-use super::types::Inscription;
+use super::types::{Inscription, InscriptionToken};
 use rocksdb::{Transaction, TransactionDB};
 
 pub const APP_OPER_TOKEN_MARKET_LIST: &'static str = "market_list";
@@ -46,4 +46,6 @@ pub trait MarketPlace {
         insc: &Inscription,
         log: &web3::ethabi::Log,
     );
+
+    fn update_token_market_info(db: &TransactionDB, token: &mut InscriptionToken);
 }

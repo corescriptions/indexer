@@ -1,4 +1,4 @@
-use rocksdb::TransactionDB;
+use rocksdb::DB;
 use serde_json::json;
 use std::sync::{Arc, RwLock};
 
@@ -14,7 +14,7 @@ pub const PAGE_SIZE: u64 = 16;
 type WebData = actix_web::web::Data<std::sync::Arc<APIState>>;
 
 pub struct APIState {
-    pub db: Arc<RwLock<TransactionDB>>,
+    pub db: Arc<RwLock<DB>>,
     pub blocknumber: RwLock<u64>,
 }
 

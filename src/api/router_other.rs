@@ -1,10 +1,20 @@
 use super::{HttpResponseExt, WebData};
-use crate::inscription::db::*;
-use actix_web::{get, web, HttpResponse, Responder};
+use crate::{
+    global::ROLLBACK_BLOCK,
+    inscription::{db::*, db_checkpoint::checkpoints_list},
+};
+use actix_web::{
+    get,
+    web::{self, Query},
+    HttpResponse, Responder,
+};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 pub fn register(config: &mut web::ServiceConfig) {
     config.service(status);
+    config.service(checkpoints);
+    config.service(rollback);
 }
 
 #[get("/status")]
@@ -29,5 +39,25 @@ async fn status(state: WebData) -> impl Responder {
             HttpResponse::response_data(result)
         }
         None => HttpResponse::response_error_notfound(),
+    }
+}
+
+#[get("/checkpoints")]
+async fn checkpoints() -> impl Responder {
+    HttpResponse::response_data(checkpoints_list())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct RollbackParams {
+    blocknumber: u64,
+}
+
+#[get("/rollback")]
+async fn rollback(info: Query<RollbackParams>) -> impl Responder {
+    if *ROLLBACK_BLOCK.lock().unwrap() == 0 {
+        *ROLLBACK_BLOCK.lock().unwrap() = info.blocknumber;
+        HttpResponse::response_data("ok")
+    } else {
+        HttpResponse::response_error(1, "rollback in progress")
     }
 }

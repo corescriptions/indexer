@@ -111,7 +111,9 @@ async fn nft(path: web::Path<String>, state: WebData) -> impl Responder {
                 let bytes = general_purpose::STANDARD.decode(&insc.mime_data).unwrap();
                 HttpResponse::Ok().content_type(insc.mime_type).body(bytes)
             }
-            InscriptionMimeCategory::Text => HttpResponse::Ok().body(insc.mime_data),
+            InscriptionMimeCategory::Text => HttpResponse::Ok()
+                .content_type("text/plain; charset=utf-8")
+                .body(insc.mime_data),
             _ => HttpResponse::BadRequest().body("Not an NFT"),
         },
         None => HttpResponse::NotFound().body("Inscription not found"),

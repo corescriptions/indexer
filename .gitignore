@@ -2,3 +2,6 @@
 /data
 /logs
 .DS_Store
+.checkpoint
+.api_tmpdb
+.rollback_tmpdb

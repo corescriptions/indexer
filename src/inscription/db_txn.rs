@@ -19,6 +19,11 @@ impl<'a> InscribeTxn<'a> for Transaction<'a, TransactionDB> {
         self.put(KEY_SYNC_BLOCKNUMBER.as_bytes(), blocknumber.to_be_bytes()).unwrap();
     }
 
+    fn set_block_hash(&self, blocknumber: u64, block_hash: &str) {
+        let key = make_index_key(KEY_SYNC_BLOCK_HASH, blocknumber);
+        self.put(key.as_bytes(), block_hash.as_bytes()).unwrap();
+    }
+
     fn inscription_insert(&self, insc: &Inscription) {
         let insc_data = serde_json::to_string(insc).unwrap();
 

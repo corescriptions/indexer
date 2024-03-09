@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 pub fn register(config: &mut web::ServiceConfig) {
     config.service(market_orders_all);
+    config.service(market_orders_list);
     config.service(market_orders);
     config.service(market_order);
 }
@@ -129,14 +130,31 @@ impl MarketOrderTrait for MarketOrder {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct MarketOrderAllParams {
+    page: Option<u64>,
+    tick: Option<String>,
+}
+
+#[get("market_orders_all")]
+async fn market_orders_all(info: Query<MarketOrderAllParams>, state: WebData) -> impl Responder {
+    let prefix = match &info.tick {
+        Some(tick) => make_index_key(KEY_MARKET_ORDER_INDEX_TICK_TIME, tick),
+        None => KEY_MARKET_ORDER_INDEX_TIME.to_string(),
+    };
+    let order_list = market_get_order_list(state, info.page.unwrap_or(1) - 1, &prefix).await;
+
+    HttpResponse::response_data(order_list)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct MarketOrderListParams {
     page: Option<u64>,
     order_type: Option<String>,
     tick: Option<String>,
 }
 
-#[get("market_orders_all")]
-async fn market_orders_all(info: Query<MarketOrderListParams>, state: WebData) -> impl Responder {
+#[get("market_orders_list")]
+async fn market_orders_list(info: Query<MarketOrderListParams>, state: WebData) -> impl Responder {
     let prefix = match &info.order_type {
         Some(order_type) if order_type == "token" => {
             if let Some(tick) = &info.tick {

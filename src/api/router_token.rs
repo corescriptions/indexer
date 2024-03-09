@@ -1,19 +1,18 @@
 use super::{HttpResponseExt, WebData, PAGE_SIZE};
-use crate::inscription::{db::*, types::*};
+use crate::{
+    inscription::{db::*, types::*},
+    num_index,
+    txn_db::TxnDB,
+};
 use actix_web::{get, web, web::Query, HttpResponse, Responder};
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 pub fn register(config: &mut web::ServiceConfig) {
     config.service(tokens);
+    config.service(token_info);
     config.service(token_holders);
     config.service(token_balance);
     config.service(token_txs);
-}
-
-fn contains_chinese_characters(s: &str) -> bool {
-    let pattern = Regex::new(r"[\u{4e00}-\u{9fa5}]").unwrap();
-    pattern.is_match(s)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -40,24 +39,32 @@ async fn tokens(info: Query<TokensParams>, state: WebData) -> impl Responder {
         list.retain(|i| i.mint_finished);
     }
 
-    let mut first_list = Vec::new();
-    let mut second_list = Vec::new();
-    for i in list {
-        if i.tick.len() <= 8 && !contains_chinese_characters(&i.tick) {
-            if i.tick == "coco" {
-                first_list.push(i);
-            } else {
-                second_list.push(i);
-            }
-        }
-    }
-    let result = first_list.into_iter().chain(second_list.into_iter()).collect::<Vec<_>>();
-    let mut pages = result.chunks(PAGE_SIZE.try_into().unwrap());
+    let mut pages = list.chunks(PAGE_SIZE.try_into().unwrap());
     if let Some(page_slice) = pages.nth(page.try_into().unwrap()) {
         HttpResponse::response_data(page_slice)
     } else {
         HttpResponse::response_data(Vec::<InscriptionToken>::new())
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TokenInfoParams {
+    tick: Option<String>,
+}
+
+#[get("/token_info")]
+async fn token_info(info: Query<TokenInfoParams>, state: WebData) -> impl Responder {
+    let db = state.db.read().unwrap();
+    let key_tick = make_index_key(KEY_INSC_TOKEN_INDEX_TICK_I, &info.tick.as_ref().unwrap());
+    let id = db.get_u64(key_tick.as_str());
+    if id == 0 {
+        HttpResponse::response_error_notfound();
+    }
+
+    let key_id = make_index_key(KEY_INSC_TOKEN_INDEX_ID, num_index!(id));
+    let result = db.get(key_id.as_bytes()).unwrap();
+    let res: Option<InscriptionToken> = serde_json::from_slice(&result.unwrap()).unwrap();
+    HttpResponse::response_data(res.unwrap())
 }
 
 #[derive(Debug, Serialize, Deserialize)]

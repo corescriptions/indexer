@@ -1,40 +1,106 @@
 use super::{
     db::{InscribeDB, InscribeTxn},
+    db_checkpoint::{checkpoints_list, make_checkpoint},
     trait_tx::TrailsTx,
     types::{WorkerSync, WorkerSyncState},
 };
 use crate::{
-    config::{CONFIRM_BLOCK, MARKET_ADDRESS_LIST, START_BLOCK, WEB3_PROVIDER, WORKER_BUFFER_LENGTH, WORKER_COUNT},
+    config::{
+        CHECKPOINT_SPAN, CONFIRM_BLOCK, FINALIZED_BLOCK, MARKET_ADDRESS_LIST, START_BLOCK, WEB3_PROVIDER, WORKER_BUFFER_LENGTH,
+        WORKER_COUNT,
+    },
     ethereum::{init_web3_http, HexParseTrait, Web3Ex},
-    global::{get_timestamp_ms, sleep_ms},
+    global::{get_timestamp_ms, sleep_ms, ROLLBACK_BLOCK},
 };
-use log::info;
+use log::{error, info, warn};
+use rocksdb::TransactionDB;
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, RwLock},
 };
 
 impl WorkerSync {
     pub fn new(db: Arc<RwLock<rocksdb::TransactionDB>>) -> Self {
         WorkerSync {
             db,
-            state: Arc::new(Mutex::new(WorkerSyncState {
+            state: Arc::new(RwLock::new(WorkerSyncState {
                 blocks: HashMap::new(),
                 event_logs: HashMap::new(),
                 worker_count: 0,
+                latest_blocknumber: 0,
             })),
         }
     }
 
+    async fn check_finalized_block_hash(db: Arc<RwLock<TransactionDB>>, blocknumber: u64) {
+        let web3 = init_web3_http(WEB3_PROVIDER.to_string().as_str());
+        let block_hash_latest = db.read().unwrap().get_block_hash(blocknumber);
+        if block_hash_latest.is_none() {
+            return;
+        }
+
+        let block_hash_latest = block_hash_latest.unwrap();
+        let finalized_block = web3.get_block_info_wait(blocknumber).await;
+        let block_hash_finanlized = finalized_block.hash.unwrap().to_hex_string();
+
+        if block_hash_latest != block_hash_finanlized {
+            error!(
+                "[sync] sync error block: {}, finalized hash: {}, latest hash: {}",
+                blocknumber, block_hash_finanlized, block_hash_latest
+            );
+            
+            let consensus_block = Self::find_consensus_checkpoint(db, blocknumber).await;
+            if consensus_block > 0 {
+                *ROLLBACK_BLOCK.lock().unwrap() = consensus_block;
+                info!("[sync] rollback to block: {}", consensus_block);
+            } else {
+                panic!("cannot find consensus block");
+            }
+        }
+    }
+
+    async fn find_consensus_block(db: Arc<RwLock<TransactionDB>>, start_blocknumber: u64) -> u64 {
+        let web3 = init_web3_http(WEB3_PROVIDER.to_string().as_str());
+        let mut blocknumber = start_blocknumber - 1;
+        loop {
+            let block_hash_db = db.read().unwrap().get_block_hash(blocknumber).unwrap();
+            let block = web3.get_block_wait(blocknumber).await;
+            let block_hash_now = block.hash.unwrap().to_hex_string();
+            if block_hash_db == block_hash_now {
+                info!("[sync] find consensus block: {}", blocknumber);
+                return blocknumber;
+            }
+            warn!(
+                "[sync] consensus error: {}, db: {}, now: {}",
+                blocknumber, block_hash_db, block_hash_now
+            );
+            blocknumber -= 1;
+        }
+    }
+
+    async fn find_consensus_checkpoint(db: Arc<RwLock<TransactionDB>>, start_blocknumber: u64) -> u64 {
+        let consensus_block = Self::find_consensus_block(db, start_blocknumber).await;
+        let checklists = checkpoints_list();
+        for checkpoint in checklists.iter().rev() {
+            if *checkpoint <= consensus_block {
+                return *checkpoint;
+            }
+        }
+
+        0
+    }
+
     fn co_fecth_block(&self, blocknumber: u64) {
         let state = self.state.clone();
+        let db = self.db.clone();
 
-        state.lock().unwrap().worker_count += 1;
+        state.write().unwrap().worker_count += 1;
 
         tokio::spawn(async move {
             let web3 = init_web3_http(WEB3_PROVIDER.to_string().as_str());
             let block = web3.get_block_wait(blocknumber).await;
             let tx_count = block.transactions.len();
+
             let mut market_event_enalbe = false;
             for tx in &block.transactions {
                 if tx.to.is_some() && MARKET_ADDRESS_LIST.contains(&tx.to.unwrap().to_hex_string().to_lowercase()) {
@@ -49,8 +115,13 @@ impl WorkerSync {
                 None
             };
 
-            let mut state = state.lock().unwrap();
+            if state.read().unwrap().latest_blocknumber - blocknumber < *FINALIZED_BLOCK {
+                Self::check_finalized_block_hash(db, blocknumber).await;
+            }
+
+            let mut state = state.write().unwrap();
             state.blocks.insert(blocknumber, block);
+
             if let Some(block_logs) = block_logs {
                 if block_logs.len() > 0 {
                     state.event_logs.insert(blocknumber, block_logs);
@@ -68,7 +139,7 @@ impl WorkerSync {
     }
 
     pub fn save_block(&self, blocknumber: u64) {
-        let mut sync_state = self.state.lock().unwrap();
+        let mut sync_state = self.state.write().unwrap();
         let block = sync_state.blocks.remove(&blocknumber).unwrap();
         let block_logs = sync_state.event_logs.remove(&blocknumber);
         let db = self.db.write().unwrap();
@@ -90,6 +161,7 @@ impl WorkerSync {
             }
         }
 
+        txn.set_block_hash(blocknumber, &block.hash.unwrap().to_hex_string());
         txn.set_sync_blocknumber(blocknumber);
         txn.set_top_inscription_sync_id(next_insc_id - 1);
         txn.commit().unwrap();
@@ -109,7 +181,7 @@ impl WorkerSync {
         loop {
             let blocknumber = self.get_sync_blocknumber();
             let saved;
-            let block_existed = self.state.lock().unwrap().blocks.contains_key(&blocknumber);
+            let block_existed = self.state.read().unwrap().blocks.contains_key(&blocknumber);
             if block_existed {
                 self.save_block(blocknumber);
                 saved = true;
@@ -123,7 +195,11 @@ impl WorkerSync {
                 saved = false;
             }
 
-            if !saved {
+            if saved {
+                if blocknumber % *CHECKPOINT_SPAN == 0 {
+                    make_checkpoint(blocknumber);
+                }
+            } else {
                 sleep_ms(10).await;
                 continue;
             }
@@ -151,21 +227,24 @@ impl WorkerSync {
 
         let mut next_blocknumber = start_blocknumber;
         loop {
-            if *WORKER_COUNT == self.state.lock().unwrap().worker_count {
+            if *WORKER_COUNT == self.state.read().unwrap().worker_count {
                 sleep_ms(10).await;
                 continue;
             }
 
             let latest_blocknumber = web3.get_blocknumber_wait().await;
             let target_blocknumber = latest_blocknumber - *CONFIRM_BLOCK;
+
+            self.state.write().unwrap().latest_blocknumber = latest_blocknumber;
+
             if next_blocknumber > target_blocknumber {
                 info!("[sync] wait for new block: {}", next_blocknumber);
                 sleep_ms(3000).await;
                 continue;
             }
 
-            if self.state.lock().unwrap().worker_count >= *WORKER_COUNT
-                || self.state.lock().unwrap().blocks.len() > *WORKER_BUFFER_LENGTH
+            if self.state.read().unwrap().worker_count >= *WORKER_COUNT
+                || self.state.read().unwrap().blocks.len() > *WORKER_BUFFER_LENGTH
             {
                 sleep_ms(10).await;
                 continue;
@@ -173,7 +252,7 @@ impl WorkerSync {
 
             let launch_worker_count = std::cmp::min(
                 target_blocknumber - next_blocknumber + 1,
-                *WORKER_COUNT - self.state.lock().unwrap().worker_count,
+                *WORKER_COUNT - self.state.read().unwrap().worker_count,
             );
 
             if launch_worker_count == 0 {
@@ -187,7 +266,7 @@ impl WorkerSync {
                     "[sync] new block: {}, latest: {}, workers: {}",
                     next_blocknumber,
                     latest_blocknumber,
-                    self.state.lock().unwrap().worker_count,
+                    self.state.read().unwrap().worker_count,
                 );
                 next_blocknumber += 1;
             }

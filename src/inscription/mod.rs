@@ -1,4 +1,5 @@
 pub mod db;
+pub mod db_checkpoint;
 pub mod db_txn;
 pub mod db_txndb;
 pub mod indexer;

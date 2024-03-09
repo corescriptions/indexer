@@ -4,7 +4,7 @@ use super::{
 };
 use log::{info, warn};
 use rocksdb::{Transaction, TransactionDB};
-pub const APP_OPER_COLLECTION_DEPLOY: &'static str = "deoply";
+pub const APP_OPER_COLLECTION_DEPLOY: &'static str = "deploy";
 
 pub trait ProcessBlockContextJsonCollection {
     fn execute_app_collection(&self, insc: &Inscription) -> bool;

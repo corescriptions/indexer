@@ -38,7 +38,7 @@ where
         }
     }
 
-    async fn get_block(&self, blocknumber: u64) -> Option<Block<Transaction>> {
+    async fn get_block_with_txs(&self, blocknumber: u64) -> Option<Block<Transaction>> {
         match self.eth().block_with_txs(BlockId::Number(blocknumber.into())).await {
             Ok(block) => block,
             Err(e) => {
@@ -50,7 +50,27 @@ where
 
     async fn get_block_wait(&self, blocknumber: u64) -> Block<Transaction> {
         loop {
-            if let Some(block) = self.get_block(blocknumber).await {
+            if let Some(block) = self.get_block_with_txs(blocknumber).await {
+                return block;
+            } else {
+                sleep_ms(1000).await;
+            }
+        }
+    }
+
+    async fn get_block_info(&self, blocknumber: u64) -> Option<Block<H256>> {
+        match self.eth().block(BlockId::Number(blocknumber.into())).await {
+            Ok(block) => block,
+            Err(e) => {
+                warn!("[web3] get_block error: {} {}", blocknumber, e.to_string());
+                None
+            }
+        }
+    }
+
+    async fn get_block_info_wait(&self, blocknumber: u64) -> Block<H256> {
+        loop {
+            if let Some(block) = self.get_block_info(blocknumber).await {
                 return block;
             } else {
                 sleep_ms(1000).await;
