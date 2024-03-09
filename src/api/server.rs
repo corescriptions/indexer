@@ -20,7 +20,7 @@ impl APIState {
     pub fn db() -> rocksdb::DB {
         let options = rocksdb::Options::default();
         loop {
-            return match rocksdb::DB::open_as_secondary(&options, DB_PATH.as_str(), "./.api_tmpdb") {
+            return match rocksdb::DB::open_for_read_only(&options, DB_PATH.as_str(), false) {
                 Ok(db) => db,
                 Err(e) => {
                     warn!("[api] open db failed: {}, retry", e);
@@ -50,9 +50,17 @@ async fn blocknumber_refresh(state: WebData) {
     }
 }
 
+async fn db_refresh(state: WebData) {
+    loop {
+        *state.db.write().unwrap() = APIState::db();
+        sleep_ms(3000).await;
+    }
+}
+
 pub async fn run(wait_forever: bool) {
     let state = web::Data::new(Arc::new(APIState::new()));
     tokio::spawn(blocknumber_refresh(state.clone()));
+    tokio::spawn(db_refresh(state.clone()));
 
     let server = HttpServer::new(move || {
         App::new()
