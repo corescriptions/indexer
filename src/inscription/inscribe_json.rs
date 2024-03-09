@@ -9,7 +9,7 @@ use rocksdb::{Transaction, TransactionDB};
 
 pub trait ProcessBlockContextJson {
     fn process_inscribe_json(&mut self, insc: &Inscription) -> bool;
-    fn save_inscribe_json(&self, txn: &Transaction<TransactionDB>, insc: &Inscription);
+    fn save_inscribe_json(&self, db: &TransactionDB, txn: &Transaction<TransactionDB>, insc: &Inscription);
 }
 
 impl<'a> ProcessBlockContextJson for InscribeContext<'a> {
@@ -28,10 +28,10 @@ impl<'a> ProcessBlockContextJson for InscribeContext<'a> {
         }
     }
 
-    fn save_inscribe_json(&self, txn: &Transaction<TransactionDB>, insc: &Inscription) {
+    fn save_inscribe_json(&self, db: &TransactionDB, txn: &Transaction<TransactionDB>, insc: &Inscription) {
         let p = insc.json["p"].as_str().unwrap();
         if p == APP_PROTO_COLLECTION {
-            self.save_inscribe_collection(txn, insc);
+            self.save_inscribe_collection(db, txn, insc);
         }
     }
 }

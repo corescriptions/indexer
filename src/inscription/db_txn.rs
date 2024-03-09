@@ -25,22 +25,17 @@ impl<'a> InscribeTxn<'a> for Transaction<'a, TransactionDB> {
     }
 
     fn inscription_insert(&self, insc: &Inscription) {
-        let insc_data = serde_json::to_string(insc).unwrap();
+        self.inscription_update(insc);
 
-        let index_key_id = make_index_key(KEY_INSC_INDEX_ID, num_index!(insc.id));
         let index_key_tx = make_index_key(KEY_INSC_INDEX_TX, &insc.tx_hash);
         let index_key_creater = make_index_key2(KEY_INSC_INDEX_CREATER, &insc.from, num_index_desc!(insc.id));
 
-        self.put(index_key_id.as_bytes(), insc_data.as_bytes()).unwrap();
         self.put(index_key_tx.as_bytes(), insc.id.to_be_bytes()).unwrap();
         self.put(index_key_creater.as_bytes(), "").unwrap();
     }
 
     fn inscription_inscribe(&self, insc: &Inscription) {
-        let insc_data = serde_json::to_string(insc).unwrap();
-
-        let index_key_id = make_index_key(KEY_INSC_INDEX_ID, num_index!(insc.id));
-        self.put(index_key_id.as_bytes(), insc_data.as_bytes()).unwrap();
+        self.inscription_update(insc);
 
         if insc.verified == InscriptionVerifiedStatus::Successful {
             let index_key_from = make_index_key2(KEY_INSC_INDEX_ADDRESS, &insc.from, num_index_desc!(insc.id));
@@ -65,6 +60,12 @@ impl<'a> InscribeTxn<'a> for Transaction<'a, TransactionDB> {
                 self.put(index_key_nft_holder_address.as_bytes(), "").unwrap();
             }
         }
+    }
+
+    fn inscription_update(&self, insc: &Inscription) {
+        let insc_data = serde_json::to_string(insc).unwrap();
+        let index_key_id = make_index_key(KEY_INSC_INDEX_ID, num_index!(insc.id));
+        self.put(index_key_id.as_bytes(), insc_data.as_bytes()).unwrap();
     }
 
     fn inscription_nft_holder_update(&self, db: &TransactionDB, id: u64, new_holder: &str) {

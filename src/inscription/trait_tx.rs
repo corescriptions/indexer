@@ -60,6 +60,7 @@ impl TrailsTx for Transaction {
             timestamp: block.timestamp.as_u64(),
             verified: InscriptionVerifiedStatus::Unresolved,
             event_logs: Vec::new(),
+            collection: None,
             market_order_id: None,
 
             json: serde_json::Value::Null,

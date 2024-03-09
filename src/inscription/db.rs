@@ -106,6 +106,7 @@ pub trait InscribeTxn<'a> {
 
     fn inscription_insert(&self, insc: &Inscription);
     fn inscription_inscribe(&self, insc: &Inscription);
+    fn inscription_update(&self, insc: &Inscription);
     fn inscription_nft_holder_update(&self, db: &TransactionDB, id: u64, new_holder: &str);
     fn inscription_nft_transfer_insert(&self, insc_id: u64, transfer_insc_id: u64, index: u64);
     fn inscription_nft_collection_insert(&self, insc: &Inscription);
