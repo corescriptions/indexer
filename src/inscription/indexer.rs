@@ -83,6 +83,7 @@ impl Indexer {
         self.delete_keys(KEY_INSC_NFT_INDEX_HOLDER_ADDRESS);
         self.delete_keys(KEY_INSC_NFT_TRANS_INDEX_ID);
         self.delete_keys(KEY_INSC_NFT_COLL_INDEX_ID);
+        self.delete_keys(KEY_INSC_NFT_COLL_ITEM_INDEX_ID);
 
         self.delete_keys(KEY_INSC_TOKEN_INDEX_ID);
         self.delete_keys(KEY_INSC_TOKEN_INDEX_TICK);

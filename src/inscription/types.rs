@@ -57,9 +57,6 @@ pub struct Inscription {
     pub mime_data: String,
     pub timestamp: u64,
     pub event_logs: Vec<web3::types::Log>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub collection: Option<String>,
     
     #[serde(skip_serializing_if = "Option::is_none")]
     pub market_order_id: Option<String>,

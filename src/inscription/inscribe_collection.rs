@@ -9,6 +9,7 @@ pub const APP_OPER_COLLECTION_DEPLOY: &'static str = "deploy";
 pub trait ProcessBlockContextJsonCollection {
     fn execute_app_collection(&self, insc: &Inscription) -> bool;
     fn save_inscribe_collection(&self, db: &TransactionDB, txn: &Transaction<TransactionDB>, insc: &Inscription);
+    fn get_nft_collection(&self, nft_id: u64) -> Option<String>;
 }
 
 impl<'a> ProcessBlockContextJsonCollection for InscribeContext<'a> {
@@ -39,40 +40,49 @@ impl<'a> ProcessBlockContextJsonCollection for InscribeContext<'a> {
         let items = json["items"].as_array().unwrap();
         for item in items {
             if !item.is_object() {
-                info!("[indexer] inscribe collection invalid item: {}", insc.tx_hash.as_str());
+                info!("[indexer] inscribe collection invalid item: {}", insc.tx_hash);
                 return false;
             }
 
             let item_tx_hash = item["tx"].as_str();
             if item_tx_hash.is_none() {
-                info!("[indexer] inscribe collection invalid item: {}", insc.tx_hash.as_str());
+                info!("[indexer] inscribe collection invalid item: {}", insc.tx_hash);
                 return false;
             }
 
             let item_tx_hash = item_tx_hash.unwrap();
             let item_insc = self.db.read().unwrap().get_inscription_by_tx(item_tx_hash);
             if item_insc.is_none() {
-                info!("[indexer] inscribe collection item not found: {}", item_tx_hash);
+                info!(
+                    "[indexer] inscribe collection item not found: {} {}",
+                    insc.tx_hash, item_tx_hash
+                );
                 return false;
             }
 
             let item_insc = item_insc.unwrap();
-            if item_insc.collection.is_some() {
-                info!("[indexer] inscribe collection item already in collection: {}", item_tx_hash);
+            let item_collection = self.get_nft_collection(item_insc.id);
+            if item_collection.is_some() {
+                info!(
+                    "[indexer] inscribe collection item already in collection: {} {}",
+                    insc.tx_hash, item_tx_hash
+                );
                 return false;
             }
 
             let item_holder = self.db.read().unwrap().get_inscription_nft_holder_by_id(item_insc.id);
             if item_holder.is_none() {
-                info!("[indexer] inscribe collection item holder not found: {}", item_tx_hash);
+                info!(
+                    "[indexer] inscribe collection item holder not found: {} {}",
+                    insc.tx_hash, item_tx_hash
+                );
                 return false;
             }
 
             if item_holder.unwrap() != insc.from {
                 info!(
                     "[indexer] inscribe collection item holder not match: {} {}",
-                    item_tx_hash,
-                    insc.tx_hash.as_str()
+                    insc.tx_hash, item_tx_hash,
                 );
                 return false;
             }
@@ -87,14 +97,18 @@ impl<'a> ProcessBlockContextJsonCollection for InscribeContext<'a> {
         true
     }
 
+    fn get_nft_collection(&self, nft_id: u64) -> Option<String> {
+        let db = self.db.read().unwrap();
+        db.get_inscription_nft_collection_by_id(nft_id)
+    }
+
     fn save_inscribe_collection(&self, db: &TransactionDB, txn: &Transaction<TransactionDB>, insc: &Inscription) {
         txn.inscription_nft_collection_insert(insc);
         let items = insc.json["items"].as_array().unwrap();
         for item in items {
             let item_tx_hash = item["tx"].as_str().unwrap();
-            let mut item_insc = db.get_inscription_by_tx(item_tx_hash).unwrap();
-            item_insc.collection = Some(insc.tx_hash.clone());
-            txn.inscription_update(&item_insc);
+            let item_insc = db.get_inscription_by_tx(item_tx_hash).unwrap();
+            txn.inscription_nft_set_collection(item_insc.id, &insc.tx_hash);
         }
     }
 }

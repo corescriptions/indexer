@@ -75,6 +75,11 @@ impl<T: DBBase + TxnDB + DBAccess> InscribeDB for T {
         self.get_string(&key_id)
     }
 
+    fn get_inscription_nft_collection_by_id(&self, id: u64) -> Option<String> {
+        let key_id = make_index_key(KEY_INSC_NFT_COLL_ITEM_INDEX_ID, num_index!(id));
+        self.get_string(&key_id)
+    }
+
     fn get_first_value(&self, prefix: &str) -> Option<(Box<[u8]>, Box<[u8]>)> {
         let mut iter = self.iterator(IteratorMode::From(prefix.as_bytes(), Direction::Forward));
         match iter.next() {

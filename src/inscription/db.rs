@@ -45,6 +45,7 @@ pub const KEY_INSC_NFT_TRANS_INDEX_ID: &'static str = "insc_nft_trans_id";
 
 // inscription nft collection
 pub const KEY_INSC_NFT_COLL_INDEX_ID: &'static str = "insc_coll_id";
+pub const KEY_INSC_NFT_COLL_ITEM_INDEX_ID: &'static str = "insc_coll_item_id";
 
 // token
 pub const KEY_INSC_TOKEN_INDEX_ID: &'static str = "insc_token_id";
@@ -89,6 +90,7 @@ pub trait InscribeDB: TxnDB {
     fn get_inscriptions_by_id(&self, id_list: &Vec<u64>) -> Vec<Inscription>;
     fn get_inscription_id_by_tx(&self, tx: &str) -> u64;
     fn get_inscription_by_tx(&self, tx: &str) -> Option<Inscription>;
+    fn get_inscription_nft_collection_by_id(&self, id: u64) -> Option<String>;
     fn get_inscription_nft_holder_by_id(&self, id: u64) -> Option<String>;
     fn get_token(&self, tick: &str) -> Option<InscriptionToken>;
     fn get_tokens(&self) -> std::collections::HashMap<String, InscriptionToken>;
@@ -112,6 +114,7 @@ pub trait InscribeTxn<'a> {
     fn inscription_update(&self, insc: &Inscription);
     fn inscription_nft_holder_update(&self, db: &TransactionDB, id: u64, new_holder: &str);
     fn inscription_nft_transfer_insert(&self, trans: &NFTTransfer);
+    fn inscription_nft_set_collection(&self, id: u64, collection: &str);
     fn inscription_nft_collection_insert(&self, insc: &Inscription);
     fn inscription_token_insert(&self, token: &InscriptionToken);
     fn inscription_token_transfer_insert(&self, tick: &str, id: u64);
