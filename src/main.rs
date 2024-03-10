@@ -1,9 +1,5 @@
 use dotenv::dotenv;
-use insdexer::{
-    adjust_open_files, api,
-    config::{self, API_ONLY},
-    inscription,
-};
+use insdexer::{adjust_open_files, api, config, inscription, log::init_log};
 use log::info;
 use tokio;
 
@@ -11,7 +7,7 @@ use tokio;
 async fn main() {
     dotenv().ok();
 
-    log4rs::init_file("./log4rs.yaml", Default::default()).unwrap();
+    init_log();
 
     info!("{:?}", *config::ARGS);
 
@@ -26,7 +22,7 @@ async fn main() {
     let indexer = inscription::types::Indexer::new();
     indexer.init();
 
-    api::server::run(*API_ONLY).await;
+    api::server::run(*config::API_ONLY).await;
 
     indexer.run().await;
 }

@@ -5,6 +5,7 @@ pub mod config;
 pub mod ethereum;
 pub mod global;
 pub mod inscription;
+pub mod log;
 pub mod txn_db;
 
 #[macro_use]

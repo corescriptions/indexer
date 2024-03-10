@@ -38,7 +38,12 @@ impl<'a> ProcessBlockContextJsonCollection for InscribeContext<'a> {
 
         let items = json["items"].as_array().unwrap();
         for item in items {
-            let item_tx_hash = item.as_str();
+            if !item.is_object() {
+                info!("[indexer] inscribe collection invalid item: {}", insc.tx_hash.as_str());
+                return false;
+            }
+
+            let item_tx_hash = item["tx"].as_str();
             if item_tx_hash.is_none() {
                 info!("[indexer] inscribe collection invalid item: {}", insc.tx_hash.as_str());
                 return false;
