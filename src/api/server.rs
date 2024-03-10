@@ -52,7 +52,8 @@ async fn blocknumber_refresh(state: WebData) {
 
 async fn db_refresh(state: WebData) {
     loop {
-        *state.db.write().unwrap() = APIState::db();
+        let db = APIState::db();
+        *state.db.write().unwrap() = db;
         sleep_ms(3000).await;
     }
 }

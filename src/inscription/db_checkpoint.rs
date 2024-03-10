@@ -51,9 +51,13 @@ pub fn make_checkpoint(blocknumber: u64) {
 }
 
 pub fn delete_earlier_checkpoint() {
-    let checkpoint_path = Path::new(CHECKPOINT_PATH.as_str());
+    let checkpoint_base_path = Path::new(CHECKPOINT_PATH.as_str());
+    if !checkpoint_base_path.exists() {
+        return;
+    }
+
     let mut checkpoints = BTreeSet::new();
-    for entry in std::fs::read_dir(checkpoint_path).unwrap() {
+    for entry in std::fs::read_dir(checkpoint_base_path).unwrap() {
         let entry = entry.unwrap();
         let path = entry.path();
         if path.is_dir() {
@@ -65,7 +69,7 @@ pub fn delete_earlier_checkpoint() {
 
     while checkpoints.len() > *CHECKPOINT_LENGTH {
         let first_checkpoint = *checkpoints.first().unwrap();
-        let checkpoint_path = checkpoint_path.join(first_checkpoint.to_string());
+        let checkpoint_path = checkpoint_base_path.join(first_checkpoint.to_string());
         std::fs::remove_dir_all(checkpoint_path).unwrap();
         checkpoints.remove(&first_checkpoint);
         info!("[checkpoint] delete checkpoint: {}", first_checkpoint);
