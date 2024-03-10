@@ -75,14 +75,14 @@ impl<'a> InscribeTxn<'a> for Transaction<'a, TransactionDB> {
 
     fn inscription_nft_holder_update(&self, db: &TransactionDB, id: u64, new_holder: &str) {
         let index_key_nft_holder_id = make_index_key(KEY_INSC_NFT_INDEX_HOLDER, num_index!(id));
-        let old_holder = db.get_string(&index_key_nft_holder_id).unwrap();
-
-        let old_key_holder = make_index_key2(KEY_INSC_NFT_INDEX_HOLDER_ADDRESS, &old_holder, num_index_desc!(id));
-        let new_key_holder = make_index_key2(KEY_INSC_NFT_INDEX_HOLDER_ADDRESS, new_holder, num_index_desc!(id));
-
-        self.delete(old_key_holder.as_bytes()).unwrap();
+        if let Some(old_holder) = db.get_string(&index_key_nft_holder_id) {
+            let old_key_holder = make_index_key2(KEY_INSC_NFT_INDEX_HOLDER_ADDRESS, &old_holder, num_index_desc!(id));
+            self.delete(old_key_holder.as_bytes()).unwrap();
+        }
 
         self.put(index_key_nft_holder_id.as_bytes(), new_holder.as_bytes()).unwrap();
+
+        let new_key_holder = make_index_key2(KEY_INSC_NFT_INDEX_HOLDER_ADDRESS, new_holder, num_index_desc!(id));
         self.put(new_key_holder.as_bytes(), "").unwrap();
     }
 
