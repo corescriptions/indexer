@@ -12,12 +12,11 @@ use crate::{
         inscribe_token::ProcessBlockContextJsonToken,
         marketplace::db::KEY_MARKET_ORDER_INDEX_TICK_PRICE,
         trait_json_value::JsonValueTrait,
-        types::{InscribeContext, Inscription, InscriptionMimeCategory, InscriptionToken, TRANSFER_TX_HEX_LENGTH},
+        types::{InscribeContext, Inscription, InscriptionMimeCategory, InscriptionToken, NFTTransfer, TRANSFER_TX_HEX_LENGTH},
     },
 };
 use log::{debug, info, warn};
 use rocksdb::{Transaction, TransactionDB};
-use std::vec;
 
 lazy_static! {
     pub static ref CONTRACT_MARKET: web3::ethabi::Contract = web3::ethabi::Contract::load(MARKET_ABI_JSON.as_bytes()).unwrap();
@@ -93,8 +92,6 @@ impl<'a> MarketPlace for InscribeContext<'a> {
         let holder = self.get_nft_holder(order.nft_id);
         assert!(MARKET_ADDRESS_LIST.contains(&holder));
 
-        let mut trans: Vec<(u64, u64, u64)> = vec![(insc.id, order.nft_id, 0)];
-
         match self.nft_holders.get_mut(&order.nft_id) {
             Some(holder) => *holder = insc.from.clone(),
             None => {
@@ -102,7 +99,10 @@ impl<'a> MarketPlace for InscribeContext<'a> {
             }
         }
 
-        self.nft_transfers.append(&mut trans);
+        self.nft_transfers.push(NFTTransfer {
+            nft_id: order.nft_id,
+            transfer_id: insc.id,
+        });
 
         info!(
             "[indexer] market_buy_nft: {} {} {} {}",
@@ -148,8 +148,6 @@ impl<'a> MarketPlace for InscribeContext<'a> {
         let holder = self.get_nft_holder(order.nft_id);
         assert!(MARKET_ADDRESS_LIST.contains(&holder));
 
-        let mut trans: Vec<(u64, u64, u64)> = vec![(insc.id, order.nft_id, 0)];
-
         match self.nft_holders.get_mut(&order.nft_id) {
             Some(holder) => *holder = insc.from.clone(),
             None => {
@@ -157,7 +155,10 @@ impl<'a> MarketPlace for InscribeContext<'a> {
             }
         }
 
-        self.nft_transfers.append(&mut trans);
+        self.nft_transfers.push(NFTTransfer {
+            nft_id: order.nft_id,
+            transfer_id: insc.id,
+        });
 
         debug!(
             "[indexer] market_cancel_nft: {} {} {} {}",

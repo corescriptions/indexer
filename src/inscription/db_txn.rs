@@ -20,7 +20,8 @@ impl<'a> InscribeTxn<'a> for Transaction<'a, TransactionDB> {
     }
 
     fn set_rollback_blocknumber(&self, blocknumber: u64) {
-        self.put(KEY_ROLLBACK_BLOCKNUMBER.as_bytes(), blocknumber.to_be_bytes()).unwrap();
+        self.put(KEY_ROLLBACK_BLOCKNUMBER.as_bytes(), blocknumber.to_be_bytes())
+            .unwrap();
     }
 
     fn set_block_hash(&self, blocknumber: u64, block_hash: &str) {
@@ -85,12 +86,11 @@ impl<'a> InscribeTxn<'a> for Transaction<'a, TransactionDB> {
         self.put(new_key_holder.as_bytes(), "").unwrap();
     }
 
-    fn inscription_nft_transfer_insert(&self, insc_id: u64, transfer_insc_id: u64, index: u64) {
-        let index_key_id = make_index_key3(
+    fn inscription_nft_transfer_insert(&self, trans: &NFTTransfer) {
+        let index_key_id = make_index_key2(
             KEY_INSC_NFT_TRANS_INDEX_ID,
-            num_index!(insc_id),
-            num_index!(transfer_insc_id),
-            num_index!(index),
+            num_index!(trans.nft_id),
+            num_index_desc!(trans.transfer_id),
         );
 
         self.put(index_key_id.as_bytes(), "").unwrap();

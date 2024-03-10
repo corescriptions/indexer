@@ -132,11 +132,17 @@ pub struct Indexer {
     pub worker_inscribe: Arc<WorkerInscribe>,
 }
 
+pub struct  NFTTransfer {
+    pub nft_id: u64,
+    pub transfer_id: u64,
+}
+
 pub struct InscribeContext<'a> {
     pub db: Arc<RwLock<rocksdb::TransactionDB>>,
     pub inscriptions: Vec<Inscription>,
     pub nft_holders: HashMap<u64, String>,
-    pub nft_transfers: Vec<(u64, u64, u64)>,
+    pub nft_transfers: Vec<NFTTransfer>,
+    pub nft_signatures: HashMap<String, u64>,
 
     pub token_cache: HashMap<String, InscriptionToken>,
     pub token_balance_change: HashMap<String, HashMap<String, i64>>,

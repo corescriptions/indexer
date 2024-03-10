@@ -62,14 +62,13 @@ impl<'a> ProcessBlockContextJsonCollection for InscribeContext<'a> {
                 return false;
             }
 
-            let item_holder = self
-                .db
-                .read()
-                .unwrap()
-                .get_inscription_nft_holder_by_id(item_insc.id)
-                .unwrap();
+            let item_holder = self.db.read().unwrap().get_inscription_nft_holder_by_id(item_insc.id);
+            if item_holder.is_none() {
+                info!("[indexer] inscribe collection item holder not found: {}", item_tx_hash);
+                return false;
+            }
 
-            if item_holder != insc.from {
+            if item_holder.unwrap() != insc.from {
                 info!(
                     "[indexer] inscribe collection item holder not match: {} {}",
                     item_tx_hash,
@@ -92,7 +91,7 @@ impl<'a> ProcessBlockContextJsonCollection for InscribeContext<'a> {
         txn.inscription_nft_collection_insert(insc);
         let items = insc.json["items"].as_array().unwrap();
         for item in items {
-            let item_tx_hash = item.as_str().unwrap();
+            let item_tx_hash = item["tx"].as_str().unwrap();
             let mut item_insc = db.get_inscription_by_tx(item_tx_hash).unwrap();
             item_insc.collection = Some(insc.tx_hash.clone());
             txn.inscription_update(&item_insc);

@@ -1,4 +1,4 @@
-use super::types::{Inscription, InscriptionToken};
+use super::types::{Inscription, InscriptionToken, NFTTransfer};
 use crate::txn_db::TxnDB;
 use rocksdb::TransactionDB;
 
@@ -111,7 +111,7 @@ pub trait InscribeTxn<'a> {
     fn inscription_inscribe(&self, insc: &Inscription);
     fn inscription_update(&self, insc: &Inscription);
     fn inscription_nft_holder_update(&self, db: &TransactionDB, id: u64, new_holder: &str);
-    fn inscription_nft_transfer_insert(&self, insc_id: u64, transfer_insc_id: u64, index: u64);
+    fn inscription_nft_transfer_insert(&self, trans: &NFTTransfer);
     fn inscription_nft_collection_insert(&self, insc: &Inscription);
     fn inscription_token_insert(&self, token: &InscriptionToken);
     fn inscription_token_transfer_insert(&self, tick: &str, id: u64);

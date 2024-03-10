@@ -101,8 +101,16 @@ Options:
           Run in api only mode [env: API_ONLY=]
       --open-files-limit <OPEN_FILES_LIMIT>
           The open files limit [env: OPEN_FILES_LIMIT=1024000] [default: 10240]
+      --checkpoint-span <CHECKPOINT_SPAN>
+          The checkpoint span [default: 10]
+      --checkpoint-len <CHECKPOINT_LEN>
+          The checkpoint length [default: 20]
+      --finalized-block <FINALIZED_BLOCK>
+          Finalized block [env: FINALIZED_BLOCK=] [default: 50]
+      --checkpoint-path <CHECKPOINT_PATH>
+          Checkpoint base path [env: CHECKPOINT_PATH=] [default: ./.checkpoint]
       --market-address-list <MARKET_ADDRESS_LIST>
-          The market address list [default: []]
+          The market address list [default: ]
   -h, --help
           Print help
   -V, --version

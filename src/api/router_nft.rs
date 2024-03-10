@@ -1,5 +1,8 @@
 use super::{HttpResponseExt, WebData, PAGE_SIZE};
-use crate::inscription::{db::*, types::*};
+use crate::{
+    inscription::{db::*, marketplace::db::InscribeMarketDB, types::*},
+    num_index,
+};
 use actix_web::{get, web, web::Query, HttpResponse, Responder};
 use base64::{engine::general_purpose, Engine as _};
 use rocksdb::Direction;
@@ -10,6 +13,7 @@ pub fn register(config: &mut web::ServiceConfig) {
     config.service(collections);
     config.service(nfts);
     config.service(nft);
+    config.service(nft_transfers);
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,6 +45,48 @@ async fn recent_nfts(info: Query<RecentNFTsParams>, state: WebData) -> impl Resp
     }
 
     HttpResponse::response_data(insc_list)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct NFTTransfersParams {
+    page: Option<u64>,
+    tx: Option<String>,
+    id: Option<u64>,
+}
+
+#[get("/nft_transfers")]
+async fn nft_transfers(info: Query<NFTTransfersParams>, state: WebData) -> impl Responder {
+    let db = state.db.read().unwrap();
+    let nft_insc = if let Some(insc_id) = info.id {
+        db.get_inscription_by_id(insc_id)
+    } else if let Some(insc_tx) = &info.tx {
+        db.get_inscription_by_tx(insc_tx)
+    } else {
+        None
+    };
+
+    let nft_insc = match nft_insc {
+        Some(value) => value,
+        None => return HttpResponse::response_error_notfound(),
+    };
+
+    let page = info.page.unwrap_or(1) - 1;
+    let prefix = make_index_key(KEY_INSC_NFT_TRANS_INDEX_ID, num_index!(nft_insc.id)) + ":";
+    let key_list = db.get_item_keys(&prefix, &prefix, page * PAGE_SIZE, PAGE_SIZE, Direction::Forward);
+    let transfer_id_list = db_index2id_desc(key_list);
+    let transfer_list = db.get_inscriptions_by_id(&transfer_id_list);
+    let mut response = Vec::new();
+
+    for trans_insc in &transfer_list {
+        let mut trans = serde_json::to_value(trans_insc).unwrap();
+        if let Some(order_id) = &trans_insc.market_order_id {
+            let order = db.market_get_order_by_id(order_id).unwrap();
+            trans["market_order"] = serde_json::to_value(&order).unwrap();
+        }
+        response.push(trans);
+    }
+
+    HttpResponse::response_data(response)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
