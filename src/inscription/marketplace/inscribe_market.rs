@@ -245,8 +245,8 @@ impl<'a> MarketPlace for InscribeContext<'a> {
 
         let log = insc.event_logs[0].match_event(&CONTRACT_MARKET, "MarketList").unwrap();
         let order_id = "0x".to_string() + &"0x".to_string() + &log.get_param("orderId").unwrap().to_string();
-        let nft_tx = &insc.mime_data[0..TRANSFER_TX_HEX_LENGTH];
-        let nft_id = self.db.read().unwrap().get_inscription_id_by_tx(nft_tx);
+        let nft_tx = "0x".to_string() + &insc.mime_data[0..TRANSFER_TX_HEX_LENGTH];
+        let nft_id = self.db.read().unwrap().get_inscription_id_by_tx(&nft_tx);
 
         let order = MarketOrder {
             order_type: MarketOrderType::NFT,
@@ -254,7 +254,7 @@ impl<'a> MarketPlace for InscribeContext<'a> {
             from: insc.from.clone(),
             to: insc.to.clone(),
             nft_id,
-            nft_tx: nft_tx.to_string(),
+            nft_tx,
             tick: "".to_string(),
             amount: 0,
             total_price: 0,

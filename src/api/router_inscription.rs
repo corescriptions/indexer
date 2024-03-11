@@ -57,16 +57,19 @@ async fn inscription_path(path: web::Path<String>, state: WebData) -> impl Respo
         Err(_) => db.get_inscription_by_tx(&path_value),
     };
 
-    match result {
-        Some(insc) => {
-            let mut insc_json = serde_json::to_value(&insc).unwrap();
-            if insc.signature.is_some() {
-                let holder = db.get_inscription_nft_holder_by_id(insc.id);
-                insc_json["owner"] = serde_json::to_value(holder).unwrap();
+    if let Some(insc) = result {
+        let mut insc_json = serde_json::to_value(&insc).unwrap();
+        if insc.signature.is_some() {
+            let holder = db.get_inscription_nft_holder_by_id(insc.id);
+            insc_json["owner"] = serde_json::to_value(holder).unwrap();
+
+            if let Some(collection) = db.get_inscription_nft_collection_by_id(insc.id) {
+                insc_json["collection"] = serde_json::to_value(collection).unwrap();
             }
-            HttpResponse::response_data(insc_json)
         }
-        None => HttpResponse::response_error_notfound(),
+        HttpResponse::response_data(insc_json)
+    } else {
+        HttpResponse::response_error_notfound()
     }
 }
 

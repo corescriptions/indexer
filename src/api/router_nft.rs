@@ -9,8 +9,8 @@ use rocksdb::Direction;
 use serde::{Deserialize, Serialize};
 
 pub fn register(config: &mut web::ServiceConfig) {
-    config.service(recent_nfts);
-    config.service(collections);
+    config.service(nft_recent);
+    config.service(nft_collections);
     config.service(nfts);
     config.service(nft);
     config.service(nft_transfers);
@@ -23,7 +23,7 @@ struct RecentNFTsParams {
 }
 
 #[get("/nft_recent")]
-async fn recent_nfts(info: Query<RecentNFTsParams>, state: WebData) -> impl Responder {
+async fn nft_recent(info: Query<RecentNFTsParams>, state: WebData) -> impl Responder {
     let db = state.db.read().unwrap();
     let page = info.page.unwrap_or(1) - 1;
     let key_list = db.get_item_keys(
@@ -95,7 +95,7 @@ struct CollectionsParams {
 }
 
 #[get("/nft_collections")]
-async fn collections(info: Query<CollectionsParams>, state: WebData) -> impl Responder {
+async fn nft_collections(info: Query<CollectionsParams>, state: WebData) -> impl Responder {
     let db = state.db.read().unwrap();
     let page = info.page.unwrap_or(1) - 1;
     let key_list = db.get_item_keys(

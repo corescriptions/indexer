@@ -1,11 +1,10 @@
-use crate::config::MARKET_ADDRESS_LIST;
-
 use super::{
     db::{InscribeDB, InscribeTxn},
     inscribe_json::ProcessBlockContextJson,
     marketplace::MarketPlace,
     types::*,
 };
+use crate::config::MARKET_ADDRESS_LIST;
 use log::{debug, info};
 use rocksdb::{Transaction, TransactionDB};
 use sha1::{Digest, Sha1};
@@ -161,8 +160,8 @@ impl<'a> InscribeContext<'a> {
         let mut trans = Vec::new();
 
         for i in (0..insc.mime_data.len()).step_by(TRANSFER_TX_HEX_LENGTH) {
-            let item_insc_tx = &insc.mime_data[i..i + TRANSFER_TX_HEX_LENGTH];
-            if let Some(item_insc) = self.db.read().unwrap().get_inscription_by_tx(item_insc_tx) {
+            let item_insc_tx = "0x".to_string() + &insc.mime_data[i..i + TRANSFER_TX_HEX_LENGTH];
+            if let Some(item_insc) = self.db.read().unwrap().get_inscription_by_tx(&item_insc_tx) {
                 let item_holder = self.get_nft_holder(item_insc.id);
                 if item_holder == insc.from {
                     trans.push(NFTTransfer {
