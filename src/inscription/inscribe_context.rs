@@ -5,7 +5,7 @@ use super::{
     types::*,
 };
 use crate::config::MARKET_ADDRESS_LIST;
-use log::{debug, info};
+use log::info;
 use rocksdb::{Transaction, TransactionDB};
 use sha1::{Digest, Sha1};
 use std::{
@@ -127,7 +127,7 @@ impl<'a> InscribeContext<'a> {
         let result = hasher.finalize();
         let signature = format!("{:x}", result);
         if self.nft_signature_exists(signature.as_str()) {
-            debug!("[indexer] inscribe existed: {} {}", insc.tx_hash.as_str(), signature);
+            info!("[indexer] inscribe existed: {} {}", insc.tx_hash.as_str(), signature);
             return false;
         }
 
@@ -162,6 +162,16 @@ impl<'a> InscribeContext<'a> {
         for i in (0..insc.mime_data.len()).step_by(TRANSFER_TX_HEX_LENGTH) {
             let item_insc_tx = "0x".to_string() + &insc.mime_data[i..i + TRANSFER_TX_HEX_LENGTH];
             if let Some(item_insc) = self.db.read().unwrap().get_inscription_by_tx(&item_insc_tx) {
+                if item_insc.mime_category != InscriptionMimeCategory::Text
+                    || item_insc.mime_category != InscriptionMimeCategory::Image
+                {
+                    info!(
+                        "[indexer] transfer inscription mime category not match: {} {}",
+                        insc.tx_hash, item_insc_tx
+                    );
+                    return false;
+                }
+
                 let item_holder = self.get_nft_holder(item_insc.id);
                 if item_holder == insc.from {
                     trans.push(NFTTransfer {
@@ -175,14 +185,14 @@ impl<'a> InscribeContext<'a> {
                         }
                     }
                 } else {
-                    debug!(
+                    info!(
                         "[indexer] transfer inscription holder not match: {} {}",
                         insc.tx_hash, item_insc_tx
                     );
                     return false;
                 }
             } else {
-                debug!("[indexer] transfer inscription not found: {} {}", insc.tx_hash, item_insc_tx);
+                info!("[indexer] transfer inscription not found: {} {}", insc.tx_hash, item_insc_tx);
                 return false;
             }
         }

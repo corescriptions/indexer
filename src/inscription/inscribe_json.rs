@@ -4,7 +4,7 @@ use super::{
     types::{InscribeContext, Inscription, APP_PROTO_COLLECTION},
 };
 use crate::config::TOKEN_PROTOCOL;
-use log::debug;
+use log::info;
 use rocksdb::{Transaction, TransactionDB};
 
 pub trait ProcessBlockContextJson {
@@ -20,7 +20,7 @@ impl<'a> ProcessBlockContextJson for InscribeContext<'a> {
             } else if protocol == APP_PROTO_COLLECTION {
                 self.execute_app_collection(insc)
             } else {
-                debug!("[indexer] inscribe json: unknown protocol: {} {}", insc.tx_hash, protocol);
+                info!("[indexer] inscribe json: unknown protocol: {} {}", insc.tx_hash, protocol);
                 false
             }
         } else {

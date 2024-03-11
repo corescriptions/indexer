@@ -1,6 +1,6 @@
 use super::types::*;
 use crate::{config::MARKET_ADDRESS_LIST, ethereum::HexParseTrait};
-use log::debug;
+use log::info;
 use regex::Regex;
 use web3::types::{Block, Transaction};
 
@@ -113,7 +113,7 @@ impl TrailsTx for Transaction {
                 };
 
                 if mime_category == InscriptionMimeCategory::Null {
-                    debug!("[indexer] inscribe invalid mime category: {}", insc.tx_hash.as_str());
+                    info!("[indexer] inscribe invalid mime category: {}", insc.tx_hash.as_str());
                     return false;
                 }
 

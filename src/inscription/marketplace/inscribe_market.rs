@@ -15,7 +15,7 @@ use crate::{
         types::{InscribeContext, Inscription, InscriptionMimeCategory, InscriptionToken, NFTTransfer, TRANSFER_TX_HEX_LENGTH},
     },
 };
-use log::{debug, info, warn};
+use log::{info, warn};
 use rocksdb::{Transaction, TransactionDB};
 
 lazy_static! {
@@ -160,7 +160,7 @@ impl<'a> MarketPlace for InscribeContext<'a> {
             transfer_id: insc.id,
         });
 
-        debug!(
+        info!(
             "[indexer] market_cancel_nft: {} {} {} {}",
             insc.tx_hash, order.order_id, insc.from, order.nft_id
         );
