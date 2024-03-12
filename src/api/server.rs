@@ -34,7 +34,7 @@ impl APIState {
 
 #[get("/")]
 async fn index() -> impl Responder {
-    HttpResponse::Ok().body("Insdexer RESTful API Server")
+    HttpResponse::Ok().body("CoreScriptions Insdexer RESTful API Server")
 }
 
 async fn not_found() -> impl Responder {
