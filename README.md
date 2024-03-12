@@ -19,7 +19,15 @@ To inscribe an CORE-20 token, a user must possess update authority, which is usu
 ## What is Insdexer
 CoreScriptions and CORE-20 tokens are powered by [Insdexer](https://insdexer.io), a collaborative effort of independent contributors and teams within the CORE ecosystem. They believe that the dynamic rendering and on-chain media support of CORE-20 tokens offer a more enriched and interactive digital art experience compared to existing solutions. Their commitment extends to maintaining an open-source framework and a policy of zero mint tax, making the platform more accessible for NFT creation and trade.
 
+## Public Endpoint
+
+[https://endpoint1.corescriptions.com/](https://endpoint1.corescriptions.com/)
+
+[https://endpoint2.corescriptions.com/](https://endpoint2.corescriptions.com/)
+
 <!--ts-->
+
+## CoreScriptions Indexer
 
 * [System Requirements](#system-requirements)
 * [Usage](#usage)
