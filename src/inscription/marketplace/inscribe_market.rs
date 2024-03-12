@@ -320,18 +320,20 @@ impl<'a> MarketPlace for InscribeContext<'a> {
         const MCAP_CALC_COUNT: u64 = 12;
         let orders = db.market_get_closed_orders_24h(&token.tick);
         let mut volume24: u128 = 0;
-        let mut mcap: f64 = 0.0;
-        let mut mcap_count = 0;
+        let mut total_price: f64 = 0.0;
+        let mut total_amount = 0.0;
+        let mut calc_count = 0;
 
         for order in &orders {
             volume24 += order.amount as u128;
-            if mcap_count < MCAP_CALC_COUNT && order.amount >= token.mint_limit {
-                mcap += order.unit_price as f64 * token.mint_max as f64;
-                mcap_count += 1;
+            if calc_count < MCAP_CALC_COUNT && order.amount >= token.mint_limit {
+                total_price += order.total_price as f64;
+                total_amount += order.amount as f64;
+                calc_count += 1;
             }
         }
 
-        token.market_cap = (mcap / mcap_count as f64) as u128;
+        token.market_cap = (total_price / total_amount * token.mint_max as f64) as u128;
         token.market_volume24h = volume24;
         token.market_txs24h = orders.len() as u64;
 

@@ -1,7 +1,9 @@
 # Insdexer
 
+[![gitbook.io](https://img.shields.io/badge/docs-insdexer-pink?logo=GitBook)](https://insdexer.gitbook.io/insdexer)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](#license)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-1.75%2B-green)](#rust-version-requirements)
+[![CI](https://github.com/insdexer/insdexer/actions/workflows/ci.yml/badge.svg)](https://github.com/insdexer/insdexer/actions/workflows/ci.yml)
 
 A high-performance, highly compatible EVM Inscriptions Indexer by Rust.
 

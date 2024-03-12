@@ -23,17 +23,17 @@ fn token_to_display(token: &InscriptionToken) -> serde_json::Value {
         "tick_i": token.tick_i,
         "tx": token.tx,
         "from": token.from,
-        "blocknumber": token.blocknumber,
-        "timestamp": token.timestamp,
-        "holders": token.holders,
-        "mint_max": token.mint_max,
-        "mint_limit": token.mint_limit,
-        "mint_progress": token.mint_progress,
+        "blocknumber": token.blocknumber.to_string(),
+        "timestamp": token.timestamp.to_string(),
+        "holders": token.holders.to_string(),
+        "mint_max": token.mint_max.to_string(),
+        "mint_limit": token.mint_limit.to_string(),
+        "mint_progress": token.mint_progress.to_string(),
         "mint_finished": token.mint_finished,
-        "market_volume24h": token.market_volume24h,
-        "market_txs24h": token.market_txs24h,
-        "market_cap": token.market_cap,
-        "market_floor_price": token.market_floor_price,
+        "market_volume24h": token.market_volume24h.to_string(),
+        "market_txs24h": token.market_txs24h.to_string(),
+        "market_cap": token.market_cap.to_string(),
+        "market_floor_price": token.market_floor_price.to_string(),
     })
 }
 
@@ -72,13 +72,13 @@ async fn tokens(info: Query<TokensParams>, state: WebData) -> impl Responder {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct TokenInfoParams {
-    tick: Option<String>,
+    tick: String,
 }
 
 #[get("/token_info")]
 async fn token_info(info: Query<TokenInfoParams>, state: WebData) -> impl Responder {
     let db = state.db.read().unwrap();
-    let key_tick = make_index_key(KEY_INSC_TOKEN_INDEX_TICK_I, &info.tick.as_ref().unwrap());
+    let key_tick = make_index_key(KEY_INSC_TOKEN_INDEX_TICK_I, &info.tick);
     let id = db.get_u64(key_tick.as_str());
     if id == 0 {
         HttpResponse::response_error_notfound();

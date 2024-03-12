@@ -1,0 +1,18 @@
+[target.x86_64-unknown-linux-gnu]
+pre-build = [
+    "dpkg --add-architecture $CROSS_DEB_ARCH",
+	"cat /proc/version",
+	"apt-get update -y",
+	"apt-get upgrade -y",
+	"apt-get install -y apt-transport-https ca-certificates",
+	"apt install -y lsb-release wget software-properties-common gnupg",
+	"apt install -y build-essential",
+	"lsb_release -a",
+	"wget https://apt.llvm.org/llvm.sh",
+	"chmod +x llvm.sh",
+	"./llvm.sh 18 all",
+	"apt autoremove",
+	"apt-get install --assume-yes libssl-dev:$CROSS_DEB_ARCH"
+]
+image = "ubuntu:22.04"
+

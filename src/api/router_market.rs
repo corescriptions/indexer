@@ -95,10 +95,10 @@ struct MarketOrderAllParams {
     tick: Option<String>,
 }
 
-#[get("market_orders_all")]
+#[get("/market_orders_all")]
 async fn market_orders_all(info: Query<MarketOrderAllParams>, state: WebData) -> impl Responder {
     let prefix = match &info.tick {
-        Some(tick) => make_index_key(KEY_MARKET_ORDER_INDEX_TICK_TIME, tick),
+        Some(tick) => make_index_key(KEY_MARKET_ORDER_INDEX_TICK_TIME, tick) + ":",
         None => KEY_MARKET_ORDER_INDEX_TIME.to_string(),
     };
     let order_list = market_get_order_list(state, info.page.unwrap_or(1) - 1, &prefix).await;
@@ -109,23 +109,29 @@ async fn market_orders_all(info: Query<MarketOrderAllParams>, state: WebData) ->
 #[derive(Debug, Serialize, Deserialize)]
 struct MarketOrderListParams {
     page: Option<u64>,
-    order_type: Option<String>,
+    order_type: String,
+    order_status: String,
     tick: Option<String>,
 }
 
-#[get("market_orders_list")]
+#[get("/market_orders_list")]
 async fn market_orders_list(info: Query<MarketOrderListParams>, state: WebData) -> impl Responder {
-    let prefix = match &info.order_type {
-        Some(order_type) if order_type == "token" => {
-            if let Some(tick) = &info.tick {
-                make_index_key(KEY_MARKET_ORDER_INDEX_TICK_PRICE, tick)
+    let prefix = if info.order_type == "token" {
+        if let Some(tick) = &info.tick {
+            if info.order_status == "open" {
+                make_index_key(KEY_MARKET_ORDER_INDEX_TICK_PRICE, tick) + ":"
+            } else if info.order_status == "close" {
+                make_index_key(KEY_MARKET_ORDER_INDEX_CLOSE_TICK_TIME, tick) + ":"
             } else {
                 return HttpResponse::response_error(1, "Invalid params");
             }
+        } else {
+            return HttpResponse::response_error(1, "Invalid params");
         }
-        Some(order_type) if order_type == "nft" => KEY_MARKET_ORDER_INDEX_NFT.to_string(),
-        None => KEY_MARKET_ORDER_INDEX_TIME.to_string(),
-        _ => return HttpResponse::response_error(1, "Invalid params"),
+    } else if info.order_type == "nft" {
+        KEY_MARKET_ORDER_INDEX_NFT.to_string()
+    } else {
+        return HttpResponse::response_error(1, "Invalid params");
     };
 
     let order_list = market_get_order_list(state, info.page.unwrap_or(1) - 1, &prefix).await;
@@ -140,7 +146,7 @@ struct MarketMyOpenParams {
     order_status: Option<String>,
 }
 
-#[get("market_orders")]
+#[get("/market_orders")]
 async fn market_orders(info: Query<MarketMyOpenParams>, state: WebData) -> impl Responder {
     let prefix_index = match &info.order_status {
         Some(order_status) if order_status == "open" => KEY_MARKET_ORDER_INDEX_SELLER.to_string(),
@@ -160,7 +166,7 @@ struct MarketOrderParams {
     order_id: String,
 }
 
-#[get("market_order")]
+#[get("/market_order")]
 async fn market_order(info: Query<MarketOrderParams>, state: WebData) -> impl Responder {
     let db = state.db.read().unwrap();
     let order = db.market_get_order_by_id(&info.order_id);

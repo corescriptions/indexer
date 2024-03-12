@@ -140,7 +140,7 @@ impl<'a> InscribeMarketTxn<'a> for Transaction<'a, TransactionDB> {
         );
         self.put(index_key_seller_close_cancel.as_bytes(), "").unwrap();
 
-        if order.order_status == MarketOrderStatus::Open {
+        if !order.tx_setprice.is_empty() {
             match order.order_type {
                 MarketOrderType::NFT => {
                     let index_key_nft =
