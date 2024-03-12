@@ -1,17 +1,20 @@
-# Insdexer
+# CoreScriptions Indexer
 
 [![gitbook.io](https://img.shields.io/badge/docs-insdexer-pink?logo=GitBook)](https://insdexer.gitbook.io/insdexer)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](#license)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-1.75%2B-green)](#rust-version-requirements)
 [![CI](https://github.com/insdexer/insdexer/actions/workflows/ci.yml/badge.svg)](https://github.com/insdexer/insdexer/actions/workflows/ci.yml)
 
-A high-performance, highly compatible EVM Inscriptions Indexer by Rust.
 
-An accessible and complete version of the documentation is available at **[insdexer.gitbook.io](https://insdexer.gitbook.io)**.
+## What is CoreScritions?
+CoreScritions taking inspiration from Bitcoin's BRC-20 standard, CORE-20 inscriptions are unique CoreDao addresses that contain images or metadata stored directly on the blockchain. This token standard streamlines token creation and functionality within the network. CORE-20 enhances interoperability, simplifying token development and fostering a robust DeFi ecosystem.
 
-## Rust Version Requirements
+## How do CoreScritions work?
+As one of the first CORE-20 tokens that spearheaded this groundbreaking standard, COCO does everything a CORE-20 token can. This standard opens doors to diverse tokenized assets and use cases.
+One innovative aspect of these tokens is their mutability. Contrary to the immutable nature of typical NFTs, CORE-20 tokens can be altered, allowing for dynamic changes like native trait swapping or implementing day/night cycles in gaming NFTs. This flexibility opens up new avenues for use cases in the digital art and gaming sectors. Another important aspect is their ranking system, which is based on the order of their creation, similar to Bitcoin Ordinals. This method creates a sense of urgency or FOMO (Fear of Missing Out), encouraging users to engage in the inscription process early. To inscribe an CORE-20 token, a user must possess update authority, which is usually bestowed upon the NFT's creator. This requirement ensures that control over the inscription process remains with the project owners, preventing unauthorized alterations to the inscribed image. However, the introduction of CORE-20 tokens is not without its challenges. Storing large files directly on the CORE blockchain can lead to issues like increased bandwidth requirements for validators and higher costs for infrastructure providers. Critics argue that given CORE's robust native capabilities for handling complex NFT transactions and storage, the addition of CORE-20 tokens might be unnecessary. They point out that, unlike Bitcoin, which needs BRC-20s due to its limited scripting capabilities, CORE can efficiently manage NFTs without requiring an additional layer like CORE-20. Despite these challenges, the innovation and possibilities brought forth by CORE-20 inscriptions are shaping a new future for digital art on CORE, offering a vision of secure, permanent, and fully integrated digital artworks within the blockchain network.
 
-1.75
+## What is Insdexer
+CoreScriptions and CORE-20 tokens are powered by [Insdexer](https://insdexer.io), a collaborative effort of independent contributors and teams within the CORE ecosystem. They believe that the dynamic rendering and on-chain media support of CORE-20 tokens offer a more enriched and interactive digital art experience compared to existing solutions. Their commitment extends to maintaining an open-source framework and a policy of zero mint tax, making the platform more accessible for NFT creation and trade.
 
 <!--ts-->
 
@@ -52,10 +55,10 @@ An accessible and complete version of the documentation is available at **[insde
 
 ### Getting Started
 
-Example: for ethereum inscriptions on sepolia network
+Example: for CoreScriptions on CoreDao network
 
 ```sh
-./insdexer --web3-provider=https://rpc.sepolia.org --start-block=5000000 --start-block-mint=5000000
+./insdexer --web3-provider=https://rpc.coredao.org --start-block=9931503 --start-block-mint=9982899 --start-block-nft=9931503
 ```
 
 ### Configuration
