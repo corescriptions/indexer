@@ -7,14 +7,6 @@ A high-performance, highly compatible EVM Inscriptions Indexer by Rust.
 
 An accessible and complete version of the documentation is available at **[insdexer.gitbook.io](https://insdexer.gitbook.io)**.
 
-## License
-
-Licensed under either of
-
-* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
-
-at your option.
-
 ## Rust Version Requirements
 
 1.75

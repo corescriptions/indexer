@@ -6,6 +6,7 @@ use crate::{
 };
 use actix_web::{get, web, web::Query, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 pub fn register(config: &mut web::ServiceConfig) {
     config.service(tokens);
@@ -13,6 +14,27 @@ pub fn register(config: &mut web::ServiceConfig) {
     config.service(token_holders);
     config.service(token_balance);
     config.service(token_txs);
+}
+
+fn token_to_display(token: &InscriptionToken) -> serde_json::Value {
+    json!({
+        "insc_id": token.insc_id,
+        "tick": token.tick,
+        "tick_i": token.tick_i,
+        "tx": token.tx,
+        "from": token.from,
+        "blocknumber": token.blocknumber,
+        "timestamp": token.timestamp,
+        "holders": token.holders,
+        "mint_max": token.mint_max,
+        "mint_limit": token.mint_limit,
+        "mint_progress": token.mint_progress,
+        "mint_finished": token.mint_finished,
+        "market_volume24h": token.market_volume24h,
+        "market_txs24h": token.market_txs24h,
+        "market_cap": token.market_cap,
+        "market_floor_price": token.market_floor_price,
+    })
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,7 +63,8 @@ async fn tokens(info: Query<TokensParams>, state: WebData) -> impl Responder {
 
     let mut pages = list.chunks(PAGE_SIZE.try_into().unwrap());
     if let Some(page_slice) = pages.nth(page.try_into().unwrap()) {
-        HttpResponse::response_data(page_slice)
+        let list: Vec<serde_json::Value> = page_slice.iter().map(token_to_display).collect();
+        HttpResponse::response_data(list)
     } else {
         HttpResponse::response_data(Vec::<InscriptionToken>::new())
     }
@@ -64,7 +87,7 @@ async fn token_info(info: Query<TokenInfoParams>, state: WebData) -> impl Respon
     let key_id = make_index_key(KEY_INSC_TOKEN_INDEX_ID, num_index!(id));
     let result = db.get(key_id.as_bytes()).unwrap();
     let res: Option<InscriptionToken> = serde_json::from_slice(&result.unwrap()).unwrap();
-    HttpResponse::response_data(res.unwrap())
+    HttpResponse::response_data(token_to_display(&res.unwrap()))
 }
 
 #[derive(Debug, Serialize, Deserialize)]

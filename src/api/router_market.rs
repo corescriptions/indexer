@@ -6,6 +6,7 @@ use crate::inscription::{
 use actix_web::{get, web, web::Query, HttpResponse, Responder};
 use rocksdb::Direction;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 pub fn register(config: &mut web::ServiceConfig) {
     config.service(market_orders_all);
@@ -14,14 +15,14 @@ pub fn register(config: &mut web::ServiceConfig) {
     config.service(market_order);
 }
 
-async fn market_get_order_list(state: WebData, page: u64, prefix: &str) -> Vec<MarketOrderDisplay> {
+async fn market_get_order_list(state: WebData, page: u64, prefix: &str) -> Vec<serde_json::value::Value> {
     let db = state.db.read().unwrap();
     let key_list = db.get_item_keys(&prefix, &prefix, page * PAGE_SIZE, PAGE_SIZE, Direction::Forward);
     let id_list = db_index2str(key_list);
     let mut order_list = Vec::new();
     for id in &id_list {
         let order = db.market_get_order_by_id(&id.to_string()).unwrap();
-        order_list.push(order.to_display());
+        order_list.push(market_order_to_display(&order));
     }
     order_list
 }
@@ -43,89 +44,48 @@ fn order_status_str(status: &MarketOrderStatus) -> String {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MarketOrderDisplay {
-    pub order_type: String,
-    pub order_id: String,
-    pub from: String,
-    pub to: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tick: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nft_id: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nft_tx: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub amount: Option<String>,
-    pub total_price: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub unit_price: Option<String>,
-    pub tx: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tx_setprice: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tx_cancel: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tx_close: Option<String>,
-
-    pub blocknumber: u64,
-    pub timestamp: u64,
-
-    pub order_status: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub buyer: Option<String>,
-}
-
-pub trait MarketOrderTrait {
-    fn to_display(&self) -> MarketOrderDisplay;
-}
-
-impl MarketOrderTrait for MarketOrder {
-    fn to_display(&self) -> MarketOrderDisplay {
-        match self.order_type {
-            MarketOrderType::Token => MarketOrderDisplay {
-                order_type: "token".to_string(),
-                order_id: self.order_id.to_string(),
-                from: self.from.to_string(),
-                to: self.to.to_string(),
-                tick: Some(self.tick.to_string()),
-                nft_id: None,
-                nft_tx: None,
-                amount: Some(self.amount.to_string()),
-                total_price: self.total_price.to_string(),
-                unit_price: Some(self.unit_price.to_string()),
-                tx: self.tx.to_string(),
-                tx_setprice: str_option(&self.tx_setprice),
-                tx_cancel: str_option(&self.tx_cancel),
-                tx_close: str_option(&self.tx_close),
-                blocknumber: self.blocknumber,
-                timestamp: self.timestamp,
-                order_status: order_status_str(&self.order_status),
-                buyer: str_option(&self.buyer),
-            },
-            MarketOrderType::NFT => MarketOrderDisplay {
-                order_type: "nft".to_string(),
-                order_id: self.order_id.to_string(),
-                from: self.from.to_string(),
-                to: self.to.to_string(),
-                tick: None,
-                nft_id: Some(self.nft_id),
-                nft_tx: Some(self.nft_tx.to_string()),
-                amount: None,
-                total_price: self.total_price.to_string(),
-                unit_price: None,
-                tx: self.tx.to_string(),
-                tx_setprice: str_option(&self.tx_setprice),
-                tx_cancel: str_option(&self.tx_cancel),
-                tx_close: str_option(&self.tx_close),
-                blocknumber: self.blocknumber,
-                timestamp: self.timestamp,
-                order_status: order_status_str(&self.order_status),
-                buyer: str_option(&self.buyer),
-            },
-        }
+fn market_order_to_display(order: &MarketOrder) -> serde_json::Value {
+    match order.order_type {
+        MarketOrderType::Token => json!({
+            "order_type": "token",
+            "order_id": order.order_id,
+            "from": order.from,
+            "to": order.to,
+            "tick": order.tick,
+            "nft_id": serde_json::Value::Null,
+            "nft_tx": serde_json::Value::Null,
+            "amount": order.amount.to_string(),
+            "total_price": order.total_price.to_string(),
+            "unit_price": order.unit_price.to_string(),
+            "tx": order.tx,
+            "tx_setprice": str_option(&order.tx_setprice),
+            "tx_cancel": str_option(&order.tx_cancel),
+            "tx_close": str_option(&order.tx_close),
+            "blocknumber": order.blocknumber.to_string(),
+            "timestamp": order.timestamp.to_string(),
+            "order_status": order_status_str(&order.order_status),
+            "buyer": str_option(&order.buyer),
+        }),
+        MarketOrderType::NFT => json!( {
+            "order_type": "nft",
+            "order_id": order.order_id,
+            "from": order.from,
+            "to": order.to,
+            "tick": serde_json::Value::Null,
+            "nft_id": order.nft_id.to_string(),
+            "nft_tx": order.nft_tx,
+            "amount": "1",
+            "total_price": order.total_price.to_string(),
+            "unit_price": order.total_price.to_string(),
+            "tx": order.tx,
+            "tx_setprice": str_option(&order.tx_setprice),
+            "tx_cancel": str_option(&order.tx_cancel),
+            "tx_close": str_option(&order.tx_close),
+            "blocknumber": order.blocknumber.to_string(),
+            "timestamp": order.timestamp.to_string(),
+            "order_status": order_status_str(&order.order_status),
+            "buyer": str_option(&order.buyer),
+        }),
     }
 }
 
@@ -205,7 +165,7 @@ async fn market_order(info: Query<MarketOrderParams>, state: WebData) -> impl Re
     let db = state.db.read().unwrap();
     let order = db.market_get_order_by_id(&info.order_id);
     match order {
-        Some(order) => HttpResponse::response_data(order.to_display()),
+        Some(order) => HttpResponse::response_data(market_order_to_display(&order)),
         None => return HttpResponse::response_error_notfound(),
     }
 }

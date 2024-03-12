@@ -64,11 +64,11 @@ pub struct Args {
     pub open_files_limit: u64,
 
     /// The checkpoint span
-    #[arg(long, default_value = "10")]
+    #[arg(long, default_value = "100")]
     pub checkpoint_span: u64,
 
     /// The checkpoint length
-    #[arg(long, default_value = "20")]
+    #[arg(long, default_value = "10")]
     pub checkpoint_len: usize,
 
     /// Finalized block
