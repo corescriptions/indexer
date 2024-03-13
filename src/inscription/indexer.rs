@@ -42,7 +42,7 @@ impl Indexer {
 
     pub fn rollback(&self, blocknumber: u64) {
         if crate::inscription::db_checkpoint::rollback(blocknumber) {
-            info!("[checkpoint] rollback to: {}", blocknumber);
+            info!("[checkpoint] rollback to: {}, need to restart", blocknumber);
         } else {
             error!("[checkpoint] rollback failed: {}", blocknumber);
         }
@@ -113,7 +113,7 @@ impl Indexer {
                 let txn = db.transaction();
                 txn.set_rollback_blocknumber(blocknumber);
                 txn.commit().unwrap();
-                info!("[indexer] set rollback to: {}", blocknumber);
+                info!("[indexer] set rollback to: {}, need to restart", blocknumber);
                 std::process::exit(0);
             }
             sleep_ms(1000).await;

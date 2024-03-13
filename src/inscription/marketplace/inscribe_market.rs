@@ -317,23 +317,23 @@ impl<'a> MarketPlace for InscribeContext<'a> {
     }
 
     fn update_token_market_info(db: &TransactionDB, token: &mut InscriptionToken) {
-        const MCAP_CALC_COUNT: u64 = 12;
+        const MCAP_CALC_COUNT: u64 = 16;
         let orders = db.market_get_closed_orders_24h(&token.tick);
         let mut volume24: u128 = 0;
-        let mut total_price: f64 = 0.0;
-        let mut total_amount = 0.0;
+        let mut total_amount: u128 = 0;
+        let mut total_price: u128 = 0;
         let mut calc_count = 0;
 
         for order in &orders {
             volume24 += order.amount as u128;
             if calc_count < MCAP_CALC_COUNT && order.amount >= token.mint_limit {
-                total_price += order.total_price as f64;
-                total_amount += order.amount as f64;
                 calc_count += 1;
+                total_amount += order.amount as u128;
+                total_price += order.total_price;
             }
         }
 
-        token.market_cap = (total_price / total_amount * token.mint_max as f64) as u128;
+        let latest_unit_price = total_price / total_amount;
         token.market_volume24h = volume24;
         token.market_txs24h = orders.len() as u64;
 
@@ -356,5 +356,8 @@ impl<'a> MarketPlace for InscribeContext<'a> {
                 break;
             }
         }
+
+        let mcap_unit_price = std::cmp::max(latest_unit_price, token.market_floor_price);
+        token.market_cap = mcap_unit_price * token.mint_max as u128;
     }
 }

@@ -41,7 +41,6 @@ fn token_to_display(token: &InscriptionToken) -> serde_json::Value {
 struct TokensParams {
     page: Option<u64>,
     order_by: Option<String>,
-    mint_finished: Option<bool>,
 }
 
 #[get("/tokens")]
@@ -55,16 +54,31 @@ async fn tokens(info: Query<TokensParams>, state: WebData) -> impl Responder {
         Some("holders") => {
             list.sort_unstable_by(|a: &InscriptionToken, b: &InscriptionToken| b.holders.cmp(&a.holders));
         }
+        Some("mcap") => {
+            list.sort_unstable_by(|a: &InscriptionToken, b: &InscriptionToken| b.market_cap.cmp(&a.market_cap));
+            list.retain(|i| i.mint_finished);
+        }
+        Some("mint") => {
+            list.sort_unstable_by(|a: &InscriptionToken, b: &InscriptionToken| {
+                let progress_a = a.mint_progress as f64 / a.mint_max as f64;
+                let progress_b = b.mint_progress as f64 / b.mint_max as f64;
+                if progress_b < progress_a {
+                    std::cmp::Ordering::Less
+                } else if progress_b == progress_a {
+                    std::cmp::Ordering::Equal
+                } else {
+                    std::cmp::Ordering::Greater
+                }
+            });
+            list.retain(|i| !i.mint_finished);
+        }
         _ => {}
-    }
-    if info.mint_finished.unwrap_or(false) {
-        list.retain(|i| i.mint_finished);
     }
 
     let mut pages = list.chunks(PAGE_SIZE.try_into().unwrap());
     if let Some(page_slice) = pages.nth(page.try_into().unwrap()) {
-        let list: Vec<serde_json::Value> = page_slice.iter().map(token_to_display).collect();
-        HttpResponse::response_data(list)
+        let result_list: Vec<serde_json::Value> = page_slice.iter().map(token_to_display).collect();
+        HttpResponse::response_data(result_list)
     } else {
         HttpResponse::response_data(Vec::<InscriptionToken>::new())
     }
