@@ -14,7 +14,7 @@ pub trait TrailsTx {
     fn inscription_prepare(&self, insc: &mut Inscription, logs: Option<&Vec<web3::types::Log>>) -> bool;
     fn inscription_get_mimecategory_plain(&self, mime_type: &str) -> InscriptionMimeCategory;
     fn inscription_is_json_object(&self, mime_type: &str, mime_data: &str) -> bool;
-    fn get_order_id(&self) -> String;
+    fn get_order_id_by_market_list(&self) -> String;
 }
 
 impl TrailsTx for Transaction {
@@ -26,7 +26,7 @@ impl TrailsTx for Transaction {
         true
     }
 
-    fn get_order_id(&self) -> String {
+    fn get_order_id_by_market_list(&self) -> String {
         let address: web3::types::Address = self.from.unwrap().into();
         let blocknumber = self.block_number.unwrap().as_u64();
         let blocknumber_u256 = web3::types::U256::from(blocknumber);
@@ -66,7 +66,7 @@ impl TrailsTx for Transaction {
         };
 
         if MARKET_ADDRESS_LIST.contains(&insc.to) {
-            insc.market_order_id = Some(self.get_order_id());
+            insc.market_order_id = Some(self.get_order_id_by_market_list());
         }
 
         if self.inscription_prepare(&mut insc, logs) {

@@ -116,7 +116,7 @@ impl WorkerSync {
             };
 
             if state.read().unwrap().latest_blocknumber - blocknumber < *FINALIZED_BLOCK {
-                Self::check_finalized_block_hash(db, blocknumber).await;
+                Self::check_finalized_block_hash(db, blocknumber - *FINALIZED_BLOCK).await;
             }
 
             let mut state = state.write().unwrap();

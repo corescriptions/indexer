@@ -1,6 +1,6 @@
-use super::{HttpResponseExt, WebData, PAGE_SIZE};
+use super::{router_market::market_order_to_display, HttpResponseExt, WebData, PAGE_SIZE};
 use crate::{
-    inscription::{db::*, types::*},
+    inscription::{db::*, marketplace::db::InscribeMarketDB, types::*},
     num_index,
 };
 use actix_web::{get, web, web::Query, HttpResponse, Responder};
@@ -99,11 +99,20 @@ struct TransactionsParams {
 async fn transactions(info: Query<TransactionsParams>, state: WebData) -> impl Responder {
     let db = state.db.read().unwrap();
     let page = info.page.unwrap_or(1) - 1;
-    let prefix = make_index_key(KEY_INSC_INDEX_ADDRESS, &info.address);
+    let prefix = make_index_key(KEY_INSC_INDEX_ADDRESS, &info.address.to_lowercase());
     let key_list = db.get_item_keys(&prefix, &prefix, page * PAGE_SIZE, PAGE_SIZE, Direction::Forward);
     let id_list = db_index2id_desc(key_list);
     let insc_list = db.get_inscriptions_by_id(&id_list);
-    HttpResponse::response_data(insc_list)
+    let mut insc_list_json = serde_json::to_value(insc_list).unwrap();
+    for insc in insc_list_json.as_array_mut().unwrap() {
+        if let Some(market_order_id) = insc.get("market_order_id") {
+            let market_order_id = market_order_id.as_str().unwrap();
+            let market_order = db.market_get_order_by_id(market_order_id).unwrap();
+            insc["market_order_info"] = market_order_to_display(&market_order);
+        }
+    }
+
+    HttpResponse::response_data(insc_list_json)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -116,7 +125,7 @@ struct CreatedParams {
 async fn created(info: Query<CreatedParams>, state: WebData) -> impl Responder {
     let db = state.db.read().unwrap();
     let page = info.page.unwrap_or(1) - 1;
-    let prefix = make_index_key(KEY_INSC_INDEX_CREATER, &info.address);
+    let prefix = make_index_key(KEY_INSC_INDEX_CREATER, &info.address.to_lowercase());
     let key_list = db.get_item_keys(&prefix, &prefix, page * PAGE_SIZE, PAGE_SIZE, Direction::Forward);
     let id_list = db_index2id_desc(key_list);
     let mut insc_list = db.get_inscriptions_by_id(&id_list);

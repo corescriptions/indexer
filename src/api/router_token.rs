@@ -148,6 +148,7 @@ struct TokenBalanceParams {
 struct TokenBalanceResponse {
     tick: String,
     balance: u64,
+    token: InscriptionToken,
 }
 
 #[get("/token_balance")]
@@ -160,7 +161,8 @@ async fn token_balance(info: Query<TokenBalanceParams>, state: WebData) -> impl 
         let tick_pos = key.len() - key.iter().rev().position(|&x| x == b':').unwrap();
         let tick = String::from_utf8(key[tick_pos..].to_vec()).unwrap();
         let balance = u64::from_be_bytes(value.as_slice().try_into().unwrap());
-        token_list.push(TokenBalanceResponse { tick, balance });
+        let token = db.get_token(&tick).unwrap();
+        token_list.push(TokenBalanceResponse { tick, balance, token });
     }
     HttpResponse::response_data(token_list)
 }

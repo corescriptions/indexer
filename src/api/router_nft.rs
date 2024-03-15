@@ -106,11 +106,7 @@ async fn nft_collections(info: Query<CollectionsParams>, state: WebData) -> impl
         Direction::Forward,
     );
     let id_list = db_index2id_desc(key_list);
-    let mut insc_list = db.get_inscriptions_by_id(&id_list);
-
-    for insc in insc_list.iter_mut() {
-        insc.mime_data = "".to_string();
-    }
+    let insc_list = db.get_inscriptions_by_id(&id_list);
 
     HttpResponse::response_data(insc_list)
 }
@@ -126,7 +122,7 @@ struct NFTsParams {
 async fn nfts(info: Query<NFTsParams>, state: WebData) -> impl Responder {
     let db = state.db.read().unwrap();
     let page = info.page.unwrap_or(1) - 1;
-    let prefix = make_index_key(KEY_INSC_NFT_INDEX_HOLDER_ADDRESS, &info.address);
+    let prefix = make_index_key(KEY_INSC_NFT_INDEX_HOLDER_ADDRESS, &info.address.to_lowercase());
     let key_list = db.get_item_keys(&prefix, &prefix, page * PAGE_SIZE, PAGE_SIZE, Direction::Forward);
     let id_list = db_index2id_desc(key_list);
     let mut insc_list = db.get_inscriptions_by_id(&id_list);

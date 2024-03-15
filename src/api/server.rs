@@ -38,7 +38,7 @@ async fn index() -> impl Responder {
 }
 
 async fn not_found() -> impl Responder {
-    HttpResponse::Ok().body("404 Not Found")
+    HttpResponse::NotFound().body("404 Not Found")
 }
 
 async fn blocknumber_refresh(state: WebData) {

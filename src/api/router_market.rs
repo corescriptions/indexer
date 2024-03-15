@@ -44,7 +44,7 @@ fn order_status_str(status: &MarketOrderStatus) -> String {
     }
 }
 
-fn market_order_to_display(order: &MarketOrder) -> serde_json::Value {
+pub fn market_order_to_display(order: &MarketOrder) -> serde_json::Value {
     match order.order_type {
         MarketOrderType::Token => json!({
             "order_type": "token",
@@ -155,7 +155,7 @@ async fn market_orders(info: Query<MarketMyOpenParams>, state: WebData) -> impl 
         _ => return HttpResponse::response_error(1, "Invalid params"),
     };
 
-    let prefix = make_index_key(&prefix_index, info.address.to_ascii_lowercase());
+    let prefix = make_index_key(&prefix_index, info.address.to_lowercase());
     let order_list = market_get_order_list(state, info.page.unwrap_or(1) - 1, &prefix).await;
 
     HttpResponse::response_data(order_list)
