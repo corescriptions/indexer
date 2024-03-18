@@ -15,6 +15,36 @@ pub fn register(config: &mut web::ServiceConfig) {
     config.service(created);
 }
 
+pub fn inscription_to_display(db: &rocksdb::DB, insc: &Inscription, include_imagedata: bool) -> serde_json::Value {
+    let mut insc_json = serde_json::to_value(insc).unwrap();
+    if let Some(_) = &insc.signature {
+        let holder = db.get_inscription_nft_holder_by_id(insc.id);
+        insc_json["owner"] = serde_json::to_value(holder).unwrap();
+
+        if let Some(collection) = db.get_inscription_nft_collection_by_id(insc.id) {
+            insc_json["collection"] = serde_json::to_value(collection).unwrap();
+        }
+    }
+
+    if let Some(market_order_id) = &insc.market_order_id {
+        let market_order = db.market_get_order_by_id(market_order_id).unwrap();
+        insc_json["market_order_info"] = market_order_to_display(&market_order);
+    }
+
+    if !include_imagedata && insc.mime_category == InscriptionMimeCategory::Image {
+        insc_json["mime_data"] = serde_json::to_value("").unwrap();
+    }
+    insc_json
+}
+
+pub fn insc_list_to_display(db: &rocksdb::DB, insc_list: &Vec<Inscription>) -> Vec<serde_json::Value> {
+    let mut result = vec![];
+    for insc in insc_list {
+        result.push(inscription_to_display(db, insc, false));
+    }
+    result
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct InscriptionsParams {
     id: Option<u64>,
@@ -33,16 +63,7 @@ async fn inscription(query: Query<InscriptionsParams>, state: WebData) -> impl R
     };
 
     if let Some(insc) = result {
-        let mut insc_json = serde_json::to_value(&insc).unwrap();
-        if insc.signature.is_some() {
-            let holder = db.get_inscription_nft_holder_by_id(insc.id);
-            insc_json["owner"] = serde_json::to_value(holder).unwrap();
-
-            if let Some(collection) = db.get_inscription_nft_collection_by_id(insc.id) {
-                insc_json["collection"] = serde_json::to_value(collection).unwrap();
-            }
-        }
-        HttpResponse::response_data(insc_json)
+        HttpResponse::response_data(inscription_to_display(&db, &insc, true))
     } else {
         HttpResponse::response_error_notfound()
     }
@@ -58,16 +79,7 @@ async fn inscription_path(path: web::Path<String>, state: WebData) -> impl Respo
     };
 
     if let Some(insc) = result {
-        let mut insc_json = serde_json::to_value(&insc).unwrap();
-        if insc.signature.is_some() {
-            let holder = db.get_inscription_nft_holder_by_id(insc.id);
-            insc_json["owner"] = serde_json::to_value(holder).unwrap();
-
-            if let Some(collection) = db.get_inscription_nft_collection_by_id(insc.id) {
-                insc_json["collection"] = serde_json::to_value(collection).unwrap();
-            }
-        }
-        HttpResponse::response_data(insc_json)
+        HttpResponse::response_data(inscription_to_display(&db, &insc, true))
     } else {
         HttpResponse::response_error_notfound()
     }
@@ -85,8 +97,9 @@ async fn recent(info: Query<RecentParams>, state: WebData) -> impl Responder {
     let top_insc_id = db.get_top_inscription_id();
     let start_key = make_index_key(KEY_INSC_INDEX_ID, num_index!(top_insc_id));
     let insc_list = db.get_items(KEY_INSC_INDEX_ID, &start_key, page * PAGE_SIZE, PAGE_SIZE, Direction::Reverse);
+    let insc_list = db_item_val2json::<Inscription>(insc_list);
 
-    HttpResponse::response_data(db_item_val2json::<Inscription>(insc_list))
+    HttpResponse::response_data(insc_list_to_display(&db, &insc_list))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -103,16 +116,8 @@ async fn transactions(info: Query<TransactionsParams>, state: WebData) -> impl R
     let key_list = db.get_item_keys(&prefix, &prefix, page * PAGE_SIZE, PAGE_SIZE, Direction::Forward);
     let id_list = db_index2id_desc(key_list);
     let insc_list = db.get_inscriptions_by_id(&id_list);
-    let mut insc_list_json = serde_json::to_value(insc_list).unwrap();
-    for insc in insc_list_json.as_array_mut().unwrap() {
-        if let Some(market_order_id) = insc.get("market_order_id") {
-            let market_order_id = market_order_id.as_str().unwrap();
-            let market_order = db.market_get_order_by_id(market_order_id).unwrap();
-            insc["market_order_info"] = market_order_to_display(&market_order);
-        }
-    }
 
-    HttpResponse::response_data(insc_list_json)
+    HttpResponse::response_data(insc_list_to_display(&db, &insc_list))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -128,11 +133,7 @@ async fn created(info: Query<CreatedParams>, state: WebData) -> impl Responder {
     let prefix = make_index_key(KEY_INSC_INDEX_CREATER, &info.address.to_lowercase());
     let key_list = db.get_item_keys(&prefix, &prefix, page * PAGE_SIZE, PAGE_SIZE, Direction::Forward);
     let id_list = db_index2id_desc(key_list);
-    let mut insc_list = db.get_inscriptions_by_id(&id_list);
-    for insc in insc_list.iter_mut() {
-        if insc.mime_category == InscriptionMimeCategory::Image {
-            insc.mime_data = "".to_string();
-        }
-    }
-    HttpResponse::response_data(insc_list)
+    let insc_list = db.get_inscriptions_by_id(&id_list);
+
+    HttpResponse::response_data(insc_list_to_display(&db, &insc_list))
 }

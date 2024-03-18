@@ -1,6 +1,6 @@
-use super::{HttpResponseExt, WebData, PAGE_SIZE};
+use super::{router_inscription::insc_list_to_display, HttpResponseExt, WebData, PAGE_SIZE};
 use crate::{
-    inscription::{db::*, marketplace::db::InscribeMarketDB, types::*},
+    inscription::{db::*, types::*},
     num_index,
 };
 use actix_web::{get, web, web::Query, HttpResponse, Responder};
@@ -34,17 +34,9 @@ async fn nft_recent(info: Query<RecentNFTsParams>, state: WebData) -> impl Respo
         Direction::Forward,
     );
     let id_list = db_index2id_desc(key_list);
-    let mut insc_list = db.get_inscriptions_by_id(&id_list);
+    let insc_list = db.get_inscriptions_by_id(&id_list);
 
-    if !info.include_image_data.unwrap_or(false) {
-        for insc in insc_list.iter_mut() {
-            if insc.mime_category == InscriptionMimeCategory::Image {
-                insc.mime_data = "".to_string();
-            }
-        }
-    }
-
-    HttpResponse::response_data(insc_list)
+    HttpResponse::response_data(insc_list_to_display(&db, &insc_list))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -75,18 +67,8 @@ async fn nft_transfers(info: Query<NFTTransfersParams>, state: WebData) -> impl 
     let key_list = db.get_item_keys(&prefix, &prefix, page * PAGE_SIZE, PAGE_SIZE, Direction::Forward);
     let transfer_id_list = db_index2id_desc(key_list);
     let transfer_list = db.get_inscriptions_by_id(&transfer_id_list);
-    let mut response = Vec::new();
 
-    for trans_insc in &transfer_list {
-        let mut trans = serde_json::to_value(trans_insc).unwrap();
-        if let Some(order_id) = &trans_insc.market_order_id {
-            let order = db.market_get_order_by_id(order_id).unwrap();
-            trans["market_order"] = serde_json::to_value(&order).unwrap();
-        }
-        response.push(trans);
-    }
-
-    HttpResponse::response_data(response)
+    HttpResponse::response_data(insc_list_to_display(&db, &transfer_list))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -125,17 +107,9 @@ async fn nfts(info: Query<NFTsParams>, state: WebData) -> impl Responder {
     let prefix = make_index_key(KEY_INSC_NFT_INDEX_HOLDER_ADDRESS, &info.address.to_lowercase());
     let key_list = db.get_item_keys(&prefix, &prefix, page * PAGE_SIZE, PAGE_SIZE, Direction::Forward);
     let id_list = db_index2id_desc(key_list);
-    let mut insc_list = db.get_inscriptions_by_id(&id_list);
+    let insc_list = db.get_inscriptions_by_id(&id_list);
 
-    if !info.include_image_data.unwrap_or(false) {
-        for insc in insc_list.iter_mut() {
-            if insc.mime_category == InscriptionMimeCategory::Image {
-                insc.mime_data = "".to_string();
-            }
-        }
-    }
-
-    HttpResponse::response_data(insc_list)
+    HttpResponse::response_data(insc_list_to_display(&db, &insc_list))
 }
 
 #[get("/nft/{path}")]

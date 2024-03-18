@@ -1,4 +1,4 @@
-use super::{HttpResponseExt, WebData, PAGE_SIZE};
+use super::{HttpResponseExt, WebData, PAGE_SIZE, router_inscription::insc_list_to_display};
 use crate::{
     inscription::{db::*, types::*},
     num_index,
@@ -113,7 +113,7 @@ struct TokenHoldersParams {
 #[derive(Debug, Serialize, Deserialize)]
 struct TokenHoldersResponse {
     address: String,
-    balance: u64,
+    balance: String,
 }
 
 #[get("/token_holders")]
@@ -133,7 +133,10 @@ async fn token_holders(info: Query<TokenHoldersParams>, state: WebData) -> impl 
     for (key, value) in &key_list {
         let address = String::from_utf8(key[key.len() - 42..].to_vec()).unwrap();
         let balance = u64::from_be_bytes(value.as_slice().try_into().unwrap());
-        holders.push(TokenHoldersResponse { address, balance });
+        holders.push(TokenHoldersResponse {
+            address,
+            balance: balance.to_string(),
+        });
     }
 
     HttpResponse::response_data(holders)
@@ -147,8 +150,8 @@ struct TokenBalanceParams {
 #[derive(Debug, Serialize, Deserialize)]
 struct TokenBalanceResponse {
     tick: String,
-    balance: u64,
-    token: InscriptionToken,
+    balance: String,
+    token: serde_json::Value,
 }
 
 #[get("/token_balance")]
@@ -162,7 +165,11 @@ async fn token_balance(info: Query<TokenBalanceParams>, state: WebData) -> impl 
         let tick = String::from_utf8(key[tick_pos..].to_vec()).unwrap();
         let balance = u64::from_be_bytes(value.as_slice().try_into().unwrap());
         let token = db.get_token(&tick).unwrap();
-        token_list.push(TokenBalanceResponse { tick, balance, token });
+        token_list.push(TokenBalanceResponse {
+            tick,
+            balance: balance.to_string(),
+            token: token_to_display(&token),
+        });
     }
     HttpResponse::response_data(token_list)
 }
@@ -189,5 +196,5 @@ async fn token_txs(info: Query<TokenTxsParams>, state: WebData) -> impl Responde
     let id_list = db_index2id_desc(key_list);
     let insc_list = db.get_inscriptions_by_id(&id_list);
 
-    HttpResponse::response_data(insc_list)
+    HttpResponse::response_data(insc_list_to_display(&db, &insc_list))
 }
