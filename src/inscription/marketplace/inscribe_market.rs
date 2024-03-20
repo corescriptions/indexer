@@ -47,12 +47,16 @@ impl<'a> MarketPlace for InscribeContext<'a> {
             }
         };
 
-        insc.market_order_id = Some(order_id.clone());
-
-        match order.order_type {
+        let result = match order.order_type {
             MarketOrderType::Token => self.execute_market_buy_token(insc, &order, log),
             MarketOrderType::NFT => self.execute_market_buy_nft(insc, &order, log),
+        };
+
+        if result {
+            insc.market_order_id = Some(order_id.clone());
         }
+
+        result
     }
 
     fn execute_market_buy_token(&mut self, insc: &Inscription, order: &MarketOrder, log: &web3::ethabi::Log) -> bool {
@@ -123,12 +127,16 @@ impl<'a> MarketPlace for InscribeContext<'a> {
             }
         };
 
-        insc.market_order_id = Some(order.order_id.clone());
-
-        match order.order_type {
+        let result = match order.order_type {
             MarketOrderType::Token => self.execute_market_cancel_token(insc, &order),
             MarketOrderType::NFT => self.execute_market_cancel_nft(insc, &order),
+        };
+
+        if result {
+            insc.market_order_id = Some(order.order_id.clone());
         }
+
+        result
     }
 
     fn execute_market_cancel_token(&mut self, insc: &Inscription, order: &MarketOrder) -> bool {
@@ -178,12 +186,11 @@ impl<'a> MarketPlace for InscribeContext<'a> {
             return false;
         }
 
-        insc.market_order_id = Some(order_id.clone());
-
         let total_price_u256 = log.get_param("price").unwrap().clone().into_uint().unwrap();
         let total_price: Result<u128, _> = total_price_u256.try_into();
         match total_price {
             Ok(_) => {
+                insc.market_order_id = Some(order_id.clone());
                 info!("[indexer] market_set_price: {} {}", insc.tx_hash, order_id);
                 true
             }
@@ -320,19 +327,15 @@ impl<'a> MarketPlace for InscribeContext<'a> {
 
     fn update_token_market_info(db: &TransactionDB, token: &mut InscriptionToken) {
         const MCAP_CALC_COUNT: u64 = 16;
-        let orders = db.market_get_closed_orders_24h(&token.tick);
+        let orders = db.market_get_latest_closed_orders(&token.tick, MCAP_CALC_COUNT);
         let mut volume24: u128 = 0;
         let mut total_amount: u128 = 0;
         let mut total_price: u128 = 0;
-        let mut calc_count = 0;
 
         for order in &orders {
             volume24 += order.amount as u128;
-            if calc_count < MCAP_CALC_COUNT && order.amount >= token.mint_limit {
-                calc_count += 1;
-                total_amount += order.amount as u128;
-                total_price += order.total_price;
-            }
+            total_amount += order.amount as u128;
+            total_price += order.total_price;
         }
 
         if total_amount == 0 {

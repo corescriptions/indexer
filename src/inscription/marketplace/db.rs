@@ -1,6 +1,5 @@
 use super::types::{MarketOrder, MarketOrderStatus, MarketOrderType};
 use crate::{
-    global::get_timestamp,
     inscription::db::{make_index_key, make_index_key2, make_index_key3},
     num_index, num_index_desc,
     txn_db::{DBBase, TxnDB},
@@ -18,7 +17,7 @@ pub const KEY_MARKET_ORDER_INDEX_CLOSE_TICK_TIME: &'static str = "market_close_t
 
 pub trait InscribeMarketDB: TxnDB {
     fn market_get_order_by_id(&self, order_id: &str) -> Option<MarketOrder>;
-    fn market_get_closed_orders_24h(&self, tick: &str) -> Vec<MarketOrder>;
+    fn market_get_latest_closed_orders(&self, tick: &str, count: u64) -> Vec<MarketOrder>;
 }
 
 impl<T: DBBase + TxnDB + DBAccess> InscribeMarketDB for T {
@@ -30,8 +29,8 @@ impl<T: DBBase + TxnDB + DBAccess> InscribeMarketDB for T {
         }
     }
 
-    fn market_get_closed_orders_24h(&self, tick: &str) -> Vec<MarketOrder> {
-        let timestamp_24h_ago = get_timestamp() - 24 * 3600;
+    fn market_get_latest_closed_orders(&self, tick: &str, count: u64) -> Vec<MarketOrder> {
+        let mut order_count = 0;
         let prefix = make_index_key(KEY_MARKET_ORDER_INDEX_CLOSE_TICK_TIME, tick) + ":";
         let mut iter = self.iterator(rocksdb::IteratorMode::From(prefix.as_bytes(), rocksdb::Direction::Forward));
         let mut orders = Vec::new();
@@ -44,11 +43,13 @@ impl<T: DBBase + TxnDB + DBAccess> InscribeMarketDB for T {
             let key = String::from_utf8(key.to_vec()).unwrap();
             let order_id = key.rfind(':').map(|i| key[i + 1..].to_string()).unwrap();
             let order = self.market_get_order_by_id(&order_id).unwrap();
-            if order.timestamp < timestamp_24h_ago {
-                break;
-            }
 
             orders.push(order);
+
+            order_count += 1;
+            if order_count >= count {
+                break;
+            }
         }
         orders
     }
